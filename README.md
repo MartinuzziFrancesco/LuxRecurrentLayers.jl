@@ -10,3 +10,17 @@
 > Currently heavy work in progress, please check out
 > [RecurrentLayers.jl](https://github.com/MartinuzziFrancesco/RecurrentLayers.jl)
 > for a more polished recurrent layers library.
+
+LuxRecurrentLayers.jl extends [Lux.jl](https://github.com/LuxDL/Lux.jl)
+recurrent layers offering by providing implementations of additional
+recurrent layers not available in base deep learning libraries.
+
+
+## See also
+
+[RecurrentLayers.jl](https://github.com/MartinuzziFrancesco/RecurrentLayers.jl):
+Equivalent library, providing recurrent layers for Flux.jl.
+
+[ReservoirComputing.jl](https://github.com/SciML/ReservoirComputing.jl):
+Reservoir computing utilities for scientific machine learning.
+Essentially gradient free trained neural networks.
