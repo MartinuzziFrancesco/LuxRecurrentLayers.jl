@@ -6,7 +6,6 @@
 
 
 [Antisymmetric recurrent cell](https://arxiv.org/abs/1902.09689).
-See [`AntisymmetricRNN`](@ref) for a layer that processes entire sequences.
 
 # Arguments
 
