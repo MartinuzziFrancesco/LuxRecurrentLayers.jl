@@ -16,9 +16,10 @@ BoolType = Utils.BoolType
 
 @compat(public, (initialparameters, initialstates, parameterlength, statelength))
 
-export AntisymmetricRNNCell
+export AntisymmetricRNNCell, CFNCell
 #export AntisymmetricRNN
 
 include("cells/antisymmetricrnn_cell.jl")
+include("cells/cfn_cell.jl")
 
 end
