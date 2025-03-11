@@ -26,8 +26,9 @@ y_t &= f(U_y h_t + W_y s_t)
 ```
 
 """
-@concrete struct SCRNCell <: AbstractRecurrentCell
-    train_state <: StaticBool
+@concrete struct SCRNCell{TS <: StaticBool, TM <: StaticBool} <: AbstractDoubleRecurrentCell{TS, TM}
+    train_state :: TS
+    train_memory :: TM
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
@@ -39,7 +40,7 @@ y_t &= f(U_y h_t + W_y s_t)
 end
 
 function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(),
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType = False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_context_weight=nothing, init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
@@ -47,7 +48,7 @@ function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_context_weight isa NTuple{2} ||
         (init_context_weight = ntuple(Returns(init_context_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
-    return SCRNCell(static(train_state), in_dims, out_dims,
+    return SCRNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_weight, init_recurrent_weight, init_context_weight, init_state, static(use_bias))
 end
 
@@ -67,25 +68,8 @@ function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
     return ps
 end
 
-initialstates(rng::AbstractRNG, ::SCRNCell) = (rng=Utils.sample_replicate(rng),)
-
 function parameterlength(scrn::SCRNCell)
     return scrn.in_dims * scrn.out_dims * 2 + scrn.out_dims * scrn.out_dims * 4 + scrn.out_dims * 2 + 1 
-end
-
-statelength(::SCRNCell) = 1
-
-function (scrn::SCRNCell{False})(inp::AbstractMatrix, ps, st::NamedTuple)
-    rng = replicate(st.rng)
-    state = init_rnn_hidden_state(rng, scrn, inp)
-    c_state = init_rnn_hidden_state(rng, scrn, inp)
-    return scrn((inp, (state, c_state)), ps, merge(st, (; rng)))
-end
-
-function (scrn::SCRNCell{True})(inp::AbstractMatrix, ps, st::NamedTuple)
-    state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
-    c_state = init_rnn_hidden_state(rng, scrn, inp)
-    return scrn((inp, (state, c_state)), ps, st)
 end
 
 function (scrn::SCRNCell)(

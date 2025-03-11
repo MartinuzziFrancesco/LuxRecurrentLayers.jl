@@ -26,8 +26,8 @@ h_t = h_{t-1} + \epsilon \tanh \left( (W_h - W_h^T - \gamma I) h_{t-1} + V_h x_t
 ```
 
 """
-@concrete struct AntisymmetricRNNCell <: AbstractRecurrentCell
-    train_state <: StaticBool
+@concrete struct AntisymmetricRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+    train_state :: TS
     activation
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -64,23 +64,8 @@ function initialparameters(rng::AbstractRNG, asymrnn::AntisymmetricRNNCell)
     return ps
 end
 
-initialstates(rng::AbstractRNG, ::AntisymmetricRNNCell) = (rng=Utils.sample_replicate(rng),)
-
 function parameterlength(asymrnn::AntisymmetricRNNCell)
     return asymrnn.in_dims * asymrnn.out_dims + asymrnn.out_dims * asymrnn.out_dims + asymrnn.out_dims 
-end
-
-statelength(::AntisymmetricRNNCell) = 1
-
-function (asymrnn::AntisymmetricRNNCell{False})(inp::AbstractMatrix, ps, st::NamedTuple)
-    rng = replicate(st.rng)
-    hidden_state = init_rnn_hidden_state(rng, asymrnn, inp)
-    return asymrnn((inp, (hidden_state,)), ps, merge(st, (; rng)))
-end
-
-function (asymrnn::AntisymmetricRNNCell{True})(inp::AbstractMatrix, ps, st::NamedTuple)
-    hidden_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
-    return asymrnn((inp, (hidden_state,)), ps, st)
 end
 
 function (asymrnn::AntisymmetricRNNCell)(
