@@ -58,16 +58,19 @@ function (rcell::AbstractDoubleRecurrentCell{False, True})(inp::AbstractMatrix,
         ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
-    c_state = init_trainable_rnn_hidden_state(rng, rcell, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
 function (rcell::AbstractDoubleRecurrentCell{True, True})(inp::AbstractMatrix,
        ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
-    c_state = init_trainable_rnn_hidden_state(rng, rcell, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state, c_state)), ps, st)
 end
 
-statelength(::AbstractRecurrentCell) = 1
-initialstates(rng::AbstractRNG, ::AbstractRecurrentCell) = (rng=Utils.sample_replicate(rng),)
+statelength(::AbstractSingleRecurrentCell) = 1
+initialstates(rng::AbstractRNG, ::AbstractSingleRecurrentCell) = (rng=Utils.sample_replicate(rng),)
+
+statelength(::AbstractDoubleRecurrentCell) = 1
+initialstates(rng::AbstractRNG, ::AbstractDoubleRecurrentCell) = (rng=Utils.sample_replicate(rng),)
