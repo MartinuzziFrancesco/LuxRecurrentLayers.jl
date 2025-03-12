@@ -30,7 +30,7 @@ h_t &= \alpha \tilde{h}_t + \beta h_{t-1}
 
 """
 @concrete struct FastRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
-    train_state :: TS
+    train_state::TS
     activation
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -43,8 +43,9 @@ h_t &= \alpha \tilde{h}_t + \beta h_{t-1}
     use_bias <: StaticBool
 end
 
-function FastRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType = False(),
+function FastRNNCell(
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
         init_alpha=-3.0f0, init_beta=3.0f0)
     return FastRNNCell(static(train_state), activation, in_dims, out_dims,
@@ -57,7 +58,8 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
     weight_ih = init_rnn_weight(
         rng, fastrnn.init_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.in_dims))
     weight_hh = init_rnn_weight(
-        rng, fastrnn.init_recurrent_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.out_dims))
+        rng, fastrnn.init_recurrent_weight, fastrnn.out_dims,
+        (fastrnn.out_dims, fastrnn.out_dims))
     ps = (; weight_ih, weight_hh)
     #biases
     if has_bias(fastrnn)
@@ -76,7 +78,8 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
 end
 
 function parameterlength(fastrnn::FastRNNCell)
-    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims + fastrnn.out_dims * 2 + 2
+    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims +
+           fastrnn.out_dims * 2 + 2
 end
 
 function (fastrnn::FastRNNCell)(
@@ -137,7 +140,7 @@ h_t &= \big((\zeta (1 - z_t) + \nu) \odot \tilde{h}_t\big) + z_t \odot h_{t-1}
 
 """
 @concrete struct FastGRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
-    train_state :: TS
+    train_state::TS
     activation
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -150,7 +153,8 @@ h_t &= \big((\zeta (1 - z_t) + \nu) \odot \tilde{h}_t\big) + z_t \odot h_{t-1}
     use_bias <: StaticBool
 end
 
-function FastGRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+function FastGRNNCell(
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
         use_bias::BoolType=True(), train_state::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
         init_zeta=1.0f0, init_nu=-4.0f0)
@@ -164,7 +168,8 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
     weight_ih = init_rnn_weight(
         rng, fastrnn.init_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.in_dims))
     weight_hh = init_rnn_weight(
-        rng, fastrnn.init_recurrent_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.out_dims))
+        rng, fastrnn.init_recurrent_weight, fastrnn.out_dims,
+        (fastrnn.out_dims, fastrnn.out_dims))
     ps = (; weight_ih, weight_hh)
     #biases
     if has_bias(fastrnn)
@@ -183,7 +188,8 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
 end
 
 function parameterlength(fastrnn::FastGRNNCell)
-    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims + fastrnn.out_dims * 2 + 2
+    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims +
+           fastrnn.out_dims * 2 + 2
 end
 
 function (fastrnn::FastGRNNCell)(
@@ -202,7 +208,7 @@ function (fastrnn::FastGRNNCell)(
     candidate_state = @. tanh_fast(xs + hs)
     ones_arr = ones(eltype(gate), size(gate))
     new_state = @. (ps.zeta * (ones_arr - gate) + ps.nu) * candidate_state +
-                gate * state
+                   gate * state
     return (new_state, (new_state,)), st
 end
 

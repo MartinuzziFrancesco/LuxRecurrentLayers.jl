@@ -42,14 +42,17 @@ end
 
 function CFNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
         use_bias::BoolType=True(), train_state::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
-    init_recurrent_bias isa NTuple{2} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_recurrent_bias isa NTuple{2} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return CFNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_bias, init_recurrent_bias, init_weight,
+        init_recurrent_weight, init_state, static(use_bias))
 end
 
 function initialparameters(rng::AbstractRNG, cfn::CFNCell)
@@ -69,7 +72,8 @@ end
 initialstates(rng::AbstractRNG, ::CFNCell) = (rng=Utils.sample_replicate(rng),)
 
 function parameterlength(cfn::CFNCell)
-    return cfn.in_dims * cfn.out_dims * 3 + cfn.out_dims * cfn.out_dims * 2 + cfn.out_dims * 5 
+    return cfn.in_dims * cfn.out_dims * 3 + cfn.out_dims * cfn.out_dims * 2 +
+           cfn.out_dims * 5
 end
 
 statelength(::CFNCell) = 1

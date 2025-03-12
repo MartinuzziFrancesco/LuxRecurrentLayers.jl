@@ -2,7 +2,8 @@ using Documenter, LuxRecurrentLayers
 include("pages.jl")
 
 mathengine = Documenter.MathJax()
-DocMeta.setdocmeta!(LuxRecurrentLayers, :DocTestSetup, :(using LuxRecurrentLayers); recursive=true)
+DocMeta.setdocmeta!(
+    LuxRecurrentLayers, :DocTestSetup, :(using LuxRecurrentLayers); recursive=true)
 
 makedocs(;
     modules=[LuxRecurrentLayers],
@@ -13,9 +14,9 @@ makedocs(;
     format=Documenter.HTML(;
         canonical="https://MartinuzziFrancesco.github.io/LuxRecurrentLayers.jl",
         edit_link="main",
-        assets=["assets/favicon.ico"],
+        assets=["assets/favicon.ico"]
     ),
-    pages=pages,
+    pages=pages
 )
 
 deploydocs(;

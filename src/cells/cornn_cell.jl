@@ -31,9 +31,10 @@
 \end{aligned}
 ```
 """
-@concrete struct coRNNCell{TS <: StaticBool, TM <: StaticBool} <: AbstractDoubleRecurrentCell{TS, TM}
-    train_state :: TS
-    train_memory :: TM
+@concrete struct coRNNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
+    train_state::TS
+    train_memory::TM
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
@@ -47,9 +48,9 @@
 end
 
 function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType = False(),
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
-        dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0,)
+        dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_weight, init_recurrent_weight, init_state, static(use_bias),
         dt, gamma, epsilon)
@@ -75,14 +76,18 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
 end
 
 function parameterlength(cornn::coRNNCell)
-    return cornn.in_dims * cornn.out_dims + cornn.out_dims * cornn.out_dims * 2 + cornn.out_dims * 3
+    return cornn.in_dims * cornn.out_dims + cornn.out_dims * cornn.out_dims * 2 +
+           cornn.out_dims * 3
 end
 
 function (cornn::coRNNCell)(
-        (inp, (state, c_state))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix},},
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(cornn, ps, st, inp, state, c_state)
+    matched_inp, matched_state, matched_cstate = match_eltype(
+        cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

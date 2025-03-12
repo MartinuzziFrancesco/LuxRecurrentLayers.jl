@@ -26,9 +26,10 @@ y_t &= f(U_y h_t + W_y s_t)
 ```
 
 """
-@concrete struct SCRNCell{TS <: StaticBool, TM <: StaticBool} <: AbstractDoubleRecurrentCell{TS, TM}
-    train_state :: TS
-    train_memory :: TM
+@concrete struct SCRNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
+    train_state::TS
+    train_memory::TM
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
@@ -40,8 +41,9 @@ y_t &= f(U_y h_t + W_y s_t)
 end
 
 function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType = False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_context_weight=nothing, init_state=zeros32)
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_context_weight=nothing, init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -49,7 +51,8 @@ function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_context_weight = ntuple(Returns(init_context_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return SCRNCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_weight, init_recurrent_weight, init_context_weight, init_state, static(use_bias))
+        init_bias, init_weight, init_recurrent_weight,
+        init_context_weight, init_state, static(use_bias))
 end
 
 function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
@@ -69,14 +72,18 @@ function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
 end
 
 function parameterlength(scrn::SCRNCell)
-    return scrn.in_dims * scrn.out_dims * 2 + scrn.out_dims * scrn.out_dims * 4 + scrn.out_dims * 2 + 1 
+    return scrn.in_dims * scrn.out_dims * 2 + scrn.out_dims * scrn.out_dims * 4 +
+           scrn.out_dims * 2 + 1
 end
 
 function (scrn::SCRNCell)(
-        (inp, (state, c_state))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix},},
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(scrn, ps, st, inp, state, c_state)
+    matched_inp, matched_state, matched_cstate = match_eltype(
+        scrn, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -84,7 +91,7 @@ function (scrn::SCRNCell)(
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_gcs = fused_dense_bias_activation(identity, ps.weight_ch, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(2))
-    ghs =  multigate(ps.weight_hh, Val(2))
+    ghs = multigate(ps.weight_hh, Val(2))
     gcs = multigate(full_gcs, Val(2))
     #computation
     new_cstate = (eltype(ps.weight_hh)(1.0f0) .- ps.alpha) .* gxs[1] .+ ps.alpha .* c_state

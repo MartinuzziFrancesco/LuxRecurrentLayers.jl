@@ -1,6 +1,6 @@
 pages = [
     "Home" => "index.md",
     "API Documentation" => [
-        "Cells" => "api/cells.md",
-    ],
+        "Cells" => "api/cells.md"
+    ]
 ]
