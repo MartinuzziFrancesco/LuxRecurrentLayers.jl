@@ -1,27 +1,13 @@
 #https://arxiv.org/abs/1804.04849
 @doc raw"""
-    JANETCell(input_size => hidden_size;
-        init_kernel = glorot_uniform,
-        init_recurrent_kernel = glorot_uniform,
-        bias = true, beta_value=1.0)
+    JANETCell(in_dims => out_dims;
+        use_bias=true, train_state=false, train_memory=false,
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32, init_memory=zeros32, beta=1.0)
 
 [Just another network unit](https://arxiv.org/abs/1804.04849).
 
-# Arguments
-
-- `input_size => hidden_size`: input and inner dimension of the layer.
-
-# Keyword arguments
-
-- `init_kernel`: initializer for the input to hidden weights.
-    Default is `glorot_uniform`.
-- `init_recurrent_kernel`: initializer for the hidden to hidden weights.
-    Default is `glorot_uniform`.
-- `bias`: include a bias or not. Default is `true`.
-- `beta_value`: control over the input data flow.
-  Default is 1.0.
-
-# Equations
+## Equations
 ```math
 \begin{aligned}
     \mathbf{s}_t &= \mathbf{U}_f \mathbf{h}_{t-1} + \mathbf{W}_f \mathbf{x}_t + \mathbf{b}_f \\
@@ -30,6 +16,81 @@
     \mathbf{h}_t &= \mathbf{c}_t.
 \end{aligned}
 ```
+
+## Arguments
+
+  - `in_dims`: Input Dimension
+  - `out_dims`: Output (Hidden State & Memory) Dimension
+
+## Keyword Arguments
+
+  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable.
+    Default set to `false`.
+  - `train_memory`: Flag to set the initial memory state as trainable.
+    Default set to `false`.
+  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
+    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
+    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
+    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+  - `init_memory`: Initializer for memory. Default set to `zeros32`.
+  - `beta`: Control parameter over the input data flow.
+    Default is 1.0.
+
+## Inputs
+
+  - Case 1a: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `false` - Creates a hidden state using
+             `init_state`, hidden memory using `init_memory` and proceeds to Case 2.
+  - Case 1b: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `false` - Repeats `hidden_state` vector
+             from the parameters to match the shape of `x`, creates hidden memory using
+             `init_memory` and proceeds to Case 2.
+  - Case 1c: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `true` - Creates a hidden state using
+             `init_state`, repeats the memory vector from parameters to match the shape of
+             `x` and proceeds to Case 2.
+  - Case 1d: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `true` - Repeats the hidden state and
+             memory vectors from the parameters to match the shape of  `x` and proceeds to
+             Case 2.
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+            updated hidden state and memory is returned.
+
+## Returns
+
+  - Tuple Containing
+
+      + Output ``h_{new}`` of shape `(out_dims, batch_size)`
+      + Tuple containing new hidden state ``h_{new}`` and new memory ``c_{new}``
+
+  - Updated model state
+
+## Parameters
+
+  - `weight_ih`: Concatenated Weights to map from input space
+                 ``\{ W_{if}, W_{ic} \}``.
+  - `weight_hh`: Concatenated Weights to map from hidden space
+                 ``\{ W_{hf}, W_{hc} \}``
+  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
+    `use_bias=false`)
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
+  - `memory`: Initial memory vector (not present if `train_memory=false`)
+
+## States
+
+  - `rng`: Controls the randomness (if any) in the initial state generation
+
 """
 @concrete struct JANETCell{TS <: StaticBool, TM <: StaticBool} <:
                  AbstractDoubleRecurrentCell{TS, TM}
@@ -41,6 +102,7 @@
     init_weight
     init_recurrent_weight
     init_state
+    init_memory
     use_bias <: StaticBool
     beta
 end
@@ -48,7 +110,7 @@ end
 function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
-        beta::Number=1.0f0)
+        init_memory=zeros32, beta::Number=1.0f0)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -70,7 +132,7 @@ function initialparameters(rng::AbstractRNG, janet::JANETCell)
         bias_hh = multi_bias(rng, janet.init_bias, janet.out_dims, janet.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh))
     end
-    # trainable state or memory
+    # trainable state and/or memory
     has_train_state(janet) &&
         (ps = merge(ps, (hidden_state=janet.init_state(rng, janet.out_dims),)))
     known(janet.train_memory) &&

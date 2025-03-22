@@ -8,6 +8,17 @@
 
 [Coupled oscillatory recurrent neural unit](https://arxiv.org/abs/2010.00951).
 
+# Equations
+
+```math
+\begin{aligned}
+\mathbf{y}_n &= y_{n-1} + \Delta t \mathbf{z}_n, \\
+\mathbf{z}_n &= z_{n-1} + \Delta t \sigma \left( \mathbf{W} y_{n-1} +
+    \mathcal{W} z_{n-1} + \mathbf{V} u_n + \mathbf{b} \right) -
+    \Delta t \gamma y_{n-1} - \Delta t \epsilon \mathbf{z}_n,
+\end{aligned}
+```
+
 # Arguments
 
 - `input_size => hidden_size`: input and inner dimension of the layer
@@ -21,15 +32,7 @@
 - `init_recurrent_kernel`: initializer for the hidden to hidden weights
 - `bias`: include a bias or not. Default is `true`
 
-# Equations
-```math
-\begin{aligned}
-\mathbf{y}_n &= y_{n-1} + \Delta t \mathbf{z}_n, \\
-\mathbf{z}_n &= z_{n-1} + \Delta t \sigma \left( \mathbf{W} y_{n-1} +
-    \mathcal{W} z_{n-1} + \mathbf{V} u_n + \mathbf{b} \right) -
-    \Delta t \gamma y_{n-1} - \Delta t \epsilon \mathbf{z}_n,
-\end{aligned}
-```
+
 """
 @concrete struct coRNNCell{TS <: StaticBool, TM <: StaticBool} <:
                  AbstractDoubleRecurrentCell{TS, TM}

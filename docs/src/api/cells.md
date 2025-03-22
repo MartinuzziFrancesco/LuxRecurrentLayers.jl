@@ -1,5 +1,11 @@
 # Cells
 
 ```@docs
-AntisymmetricRNNCell
+    AntisymmetricRNNCell
+    CFNCell
+    JANETCell
+    coRNNCell
+    FastGRNNCell
+    SCRNCell
+    FastRNNCell
 ```
