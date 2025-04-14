@@ -1,19 +1,24 @@
 #https://arxiv.org/pdf/1412.7753
 
 @doc raw"""
-    SCRNCell(in_dims => out_dims;
+    LEMCell(in_dims => out_dims;
         use_bias=true, train_state=false, train_memory=false,
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_context_weight=nothing, init_state=zeros32, init_memory=zeros32)
 
-[Structurally contraint recurrent unit](https://arxiv.org/pdf/1412.7753).
+[Long expressive memory unit](https://arxiv.org/pdf/2110.04744).
 
-## Equations
+# Equations
 ```math
 \begin{aligned}
-s_t &= (1 - \alpha) W_s x_t + \alpha s_{t-1}, \\
-h_t &= \sigma(W_h s_t + U_h h_{t-1} + b_h), \\
-y_t &= f(U_y h_t + W_y s_t)
+\boldsymbol{\Delta t_n} &= \Delta \hat{t} \hat{\sigma}
+    (W_1 y_{n-1} + V_1 u_n + b_1) \\
+\overline{\boldsymbol{\Delta t_n}} &= \Delta \hat{t}
+    \hat{\sigma} (W_2 y_{n-1} + V_2 u_n + b_2) \\
+z_n &= (1 - \boldsymbol{\Delta t_n}) \odot z_{n-1} +
+    \boldsymbol{\Delta t_n} \odot \sigma (W_z y_{n-1} + V_z u_n + b_z) \\
+y_n &= (1 - \boldsymbol{\Delta t_n}) \odot y_{n-1} +
+    \boldsymbol{\Delta t_n} \odot \sigma (W_y z_n + V_y u_n + b_y)
 \end{aligned}
 ```
 
@@ -97,7 +102,7 @@ y_t &= f(U_y h_t + W_y s_t)
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct SCRNCell{TS <: StaticBool, TM <: StaticBool} <:
+@concrete struct LEMCell{TS <: StaticBool, TM <: StaticBool} <:
                  AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
@@ -106,26 +111,25 @@ y_t &= f(U_y h_t + W_y s_t)
     init_bias
     init_weight
     init_recurrent_weight
-    init_context_weight #change this
+    init_secondrecurrent_weight #change this
     init_state
     init_memory
     use_bias <: StaticBool
 end
 
-function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_context_weight=nothing, init_state=zeros32, init_memory=zeros32)
-    init_weight isa NTuple{4} || (init_weight = ntuple(Returns(init_weight), 4))
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
     init_bias isa NTuple{4} || (init_bias = ntuple(Returns(init_bias), 4))
-    return SCRNCell(static(train_state), static(train_memory), in_dims, out_dims,
+    return LEMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_weight, init_recurrent_weight,
         init_context_weight, init_state, init_memory, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
+function initialparameters(rng::AbstractRNG, scrn::LEMCell)
     # weights
     weight_ih = multi_inits(rng, scrn.init_weight, scrn.out_dims, scrn.in_dims)
     weight_hh = multi_inits(rng, scrn.init_recurrent_weight, scrn.out_dims, scrn.out_dims)
