@@ -2,10 +2,10 @@ abstract type AbstractSingleRecurrentCell{TS} <: AbstractRecurrentCell end
 abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
 
 function multi_inits(
-        rng::AbstractRNG, inits, first_dim::IntegerType, second_dim::IntegerType)
+        rng::AbstractRNG, inits, first_dim::IntegerType, second_dim::IntegerType) #args...
     weights = vcat(
         [init_rnn_weight(
-             rng, init, first_dim, (first_dim, second_dim)
+             rng, init, first_dim, (first_dim, second_dim) #args...
          )
          for init in inits]...
     )

@@ -172,7 +172,8 @@ function (scrn::SCRNCell)(
     ghs = multigate(ps.weight_hh, Val(2))
     gcs = multigate(full_gcs, Val(2))
     #computation
-    new_cstate = (eltype(ps.weight_hh)(1.0f0) .- ps.alpha) .* gxs[1] .+ ps.alpha .* matched_cstate
+    new_cstate = (eltype(ps.weight_hh)(1.0f0) .- ps.alpha) .* gxs[1] .+
+                 ps.alpha .* matched_cstate
     hidden_layer = sigmoid_fast.(gxs[2] .+ ghs[1] * matched_state .+ gcs[1])
     new_state = tanh_fast.(ghs[2] * hidden_layer .+ gcs[2])
     return (new_state, (new_state, new_cstate)), st
