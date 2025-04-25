@@ -116,7 +116,7 @@ function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return JANETCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_weight, init_recurrent_weight, init_state, static(use_bias),
+        init_bias, init_weight, init_recurrent_weight, init_state, init_memory, static(use_bias),
         beta)
 end
 

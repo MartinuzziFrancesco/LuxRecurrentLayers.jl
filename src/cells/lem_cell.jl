@@ -134,11 +134,11 @@ function initialparameters(rng::AbstractRNG, scrn::LEMCell)
     weight_ih = multi_inits(rng, scrn.init_weight, scrn.out_dims, scrn.in_dims)
     weight_hh = multi_inits(rng, scrn.init_recurrent_weight, scrn.out_dims, scrn.out_dims)
     #weight_ch = multi_inits(rng, scrn.init_context_weight, scrn.out_dims, scrn.out_dims)
-    ps = (; weight_ih, weight_hh, weight_ch)
+    ps = (; weight_ih, weight_hh)
     # biases
     if has_bias(scrn)
         bias_ih = init_rnn_bias(rng, scrn.init_bias, scrn.out_dims, scrn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_ih))
     end
     # trainable state and/or memory
     has_train_state(scrn) &&
@@ -150,39 +150,8 @@ function initialparameters(rng::AbstractRNG, scrn::LEMCell)
     return ps
 end
 
-function parameterlength(scrn::SCRNCell)
-    return scrn.in_dims * scrn.out_dims * 2 + scrn.out_dims * scrn.out_dims * 4 +
-           scrn.out_dims * 2 + 1
+function parameterlength(lem::LEMCell)
+    return lem.in_dims * lem.out_dims * 2 + lem.out_dims * lem.out_dims * 4 +
+        lem.out_dims * 2 + 1
 end
 
-function (scrn::SCRNCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
-    #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
-        scrn, ps, st, inp, state, c_state)
-    #get bias
-    bias_ih = safe_getproperty(ps, Val(:bias_ih))
-    bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #gates
-    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
-    full_gcs = fused_dense_bias_activation(identity, ps.weight_ch, matched_state, bias_hh)
-    gxs = multigate(full_gxs, Val(2))
-    ghs = multigate(ps.weight_hh, Val(2))
-    gcs = multigate(full_gcs, Val(2))
-    #computation
-    new_cstate = (eltype(ps.weight_hh)(1.0f0) .- ps.alpha) .* gxs[1] .+
-                 ps.alpha .* matched_cstate
-    hidden_layer = sigmoid_fast.(gxs[2] .+ ghs[1] * matched_state .+ gcs[1])
-    new_state = tanh_fast.(ghs[2] * hidden_layer .+ gcs[2])
-    return (new_state, (new_state, new_cstate)), st
-end
-
-function Base.show(io::IO, r::SCRNCell)
-    print(io, "SCRNCell($(r.in_dims) => $(r.out_dims)")
-    has_bias(r) || print(io, ", use_bias=false")
-    has_train_state(r) && print(io, ", train_state=true")
-    print(io, ")")
-end

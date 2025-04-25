@@ -3,9 +3,12 @@
 ```@docs
     AntisymmetricRNNCell
     CFNCell
-    JANETCell
     coRNNCell
     FastGRNNCell
-    SCRNCell
     FastRNNCell
+    JANETCell
+    LEMCell
+    MinimalRNNCell
+    SCRNCell
+    STARCell
 ```

@@ -92,7 +92,7 @@
 
 """
 @concrete struct CFNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
-    train_state <: TS
+    train_state::TS
     activation
     in_dims <: IntegerType
     out_dims <: IntegerType
