@@ -131,8 +131,10 @@ end
 
 function initialparameters(rng::AbstractRNG, scrn::LEMCell)
     # weights
-    weight_ih = multi_inits(rng, scrn.init_weight, scrn.out_dims, scrn.in_dims)
-    weight_hh = multi_inits(rng, scrn.init_recurrent_weight, scrn.out_dims, scrn.out_dims)
+    weight_ih = multi_inits(
+        rng, scrn.init_weight, scrn.out_dims, (scrn.out_dims, scrn.in_dims))
+    weight_hh = multi_inits(
+        rng, scrn.init_recurrent_weight, scrn.out_dims, (scrn.out_dims, scrn.out_dims))
     #weight_ch = multi_inits(rng, scrn.init_context_weight, scrn.out_dims, scrn.out_dims)
     ps = (; weight_ih, weight_hh)
     # biases
@@ -152,6 +154,5 @@ end
 
 function parameterlength(lem::LEMCell)
     return lem.in_dims * lem.out_dims * 2 + lem.out_dims * lem.out_dims * 4 +
-        lem.out_dims * 2 + 1
+           lem.out_dims * 2 + 1
 end
-

@@ -122,9 +122,10 @@ end
 
 function initialparameters(rng::AbstractRNG, janet::JANETCell)
     # weights
-    weight_ih = multi_inits(rng, janet.init_weight, janet.out_dims, janet.in_dims)
+    weight_ih = multi_inits(
+        rng, janet.init_weight, janet.out_dims, (janet.out_dims, janet.in_dims))
     weight_hh = multi_inits(
-        rng, janet.init_recurrent_weight, janet.out_dims, janet.out_dims)
+        rng, janet.init_recurrent_weight, janet.out_dims, (janet.out_dims, janet.out_dims))
     ps = (; weight_ih, weight_hh)
     # biases
     if has_bias(janet)

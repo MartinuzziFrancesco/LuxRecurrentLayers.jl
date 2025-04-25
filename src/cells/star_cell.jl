@@ -94,7 +94,8 @@ function STARCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
 end
 
 function initialparameters(rng::AbstractRNG, star::STARCell)
-    weight_ih = multi_inits(rng, star.init_weight, star.out_dims, star.in_dims)
+    weight_ih = multi_inits(
+        rng, star.init_weight, star.out_dims, (star.out_dims, star.in_dims))
     weight_hh = init_rnn_weight(rng, star.init_recurrent_weight, star.out_dims,
         (star.out_dims, star.out_dims))
     ps = (; weight_ih, weight_hh)

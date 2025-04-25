@@ -129,9 +129,12 @@ end
 
 function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
     # weights
-    weight_ih = multi_inits(rng, scrn.init_weight, scrn.out_dims, scrn.in_dims)
-    weight_hh = multi_inits(rng, scrn.init_recurrent_weight, scrn.out_dims, scrn.out_dims)
-    weight_ch = multi_inits(rng, scrn.init_context_weight, scrn.out_dims, scrn.out_dims)
+    weight_ih = multi_inits(
+        rng, scrn.init_weight, scrn.out_dims, (scrn.out_dims, scrn.in_dims))
+    weight_hh = multi_inits(
+        rng, scrn.init_recurrent_weight, scrn.out_dims, (scrn.out_dims, scrn.out_dims))
+    weight_ch = multi_inits(
+        rng, scrn.init_context_weight, scrn.out_dims, (scrn.out_dims, scrn.out_dims))
     ps = (; weight_ih, weight_hh, weight_ch)
     # biases
     if has_bias(scrn)

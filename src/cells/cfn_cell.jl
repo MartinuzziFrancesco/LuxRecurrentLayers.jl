@@ -120,8 +120,9 @@ function CFNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activa
 end
 
 function initialparameters(rng::AbstractRNG, cfn::CFNCell)
-    weight_ih = multi_inits(rng, cfn.init_weight, cfn.out_dims, cfn.in_dims)
-    weight_hh = multi_inits(rng, cfn.init_recurrent_weight, cfn.out_dims, cfn.out_dims)
+    weight_ih = multi_inits(rng, cfn.init_weight, cfn.out_dims, (cfn.out_dims, cfn.in_dims))
+    weight_hh = multi_inits(
+        rng, cfn.init_recurrent_weight, cfn.out_dims, (cfn.out_dims, cfn.out_dims))
     ps = (; weight_ih, weight_hh)
     if has_bias(cfn)
         bias_ih = multi_bias(rng, cfn.init_bias, cfn.out_dims, cfn.out_dims)
