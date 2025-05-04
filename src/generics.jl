@@ -1,17 +1,17 @@
 abstract type AbstractSingleRecurrentCell{TS} <: AbstractRecurrentCell end
 abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
 
-function multi_inits(args...)
+function multi_inits(rng::AbstractRNG, inits, args...)
     weights = vcat(
-        [init_rnn_weight(args...)
+        [init_rnn_weight(rng, init, args...)
          for init in inits]...
     )
     return weights
 end
 
-function multi_bias(args...)
+function multi_bias(rng::AbstractRNG, inits, args...)
     biases = vcat(
-        [init_rnn_bias(args...)
+        [init_rnn_bias(rng, init, args...)
          for init in inits]...
     )
     return biases
