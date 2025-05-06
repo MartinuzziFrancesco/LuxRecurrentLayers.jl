@@ -114,7 +114,6 @@ end
         bias = true)
 
 [Fast gated recurrent neural network cell](https://arxiv.org/abs/1901.02358).
-See [`FastGRNN`](@ref) for a layer that processes entire sequences.
 
 # Arguments
 
