@@ -129,7 +129,7 @@ end
 function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_peephole_weight=nothing, init_recurrent_bias = nothing, init_peephole_bias = nothing,
+        init_peephole_weight=nothing, init_recurrent_bias=nothing, init_peephole_bias=nothing,
         init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{4} || (init_weight = ntuple(Returns(init_weight), 4))
     init_recurrent_weight isa NTuple{4} ||
@@ -137,8 +137,10 @@ function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType
     init_peephole_weight isa NTuple{3} ||
         (init_peephole_weight = ntuple(Returns(init_peephole_weight), 3))
     init_bias isa NTuple{4} || (init_bias = ntuple(Returns(init_bias), 4))
-    init_recurrent_bias isa NTuple{4} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 4))
-    init_peephole_bias isa NTuple{3} || (init_peephole_bias = ntuple(Returns(init_peephole_bias), 3))
+    init_recurrent_bias isa NTuple{4} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 4))
+    init_peephole_bias isa NTuple{3} ||
+        (init_peephole_bias = ntuple(Returns(init_peephole_bias), 3))
     return PeepholeLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_peephole_bias, init_weight, init_recurrent_weight,
         init_peephole_weight, init_state, init_memory, static(use_bias))
@@ -199,7 +201,6 @@ function (lstm::PeepholeLSTMCell)(
     return (new_state, (new_state, new_cstate)), st
 end
 
-
 function Base.show(io::IO, lstm::PeepholeLSTMCell)
     print(io, "PeepholeLSTMCell($(lstm.in_dims) => $(lstm.out_dims)")
     has_bias(lstm) || print(io, ", use_bias=false")
@@ -207,4 +208,3 @@ function Base.show(io::IO, lstm::PeepholeLSTMCell)
     known(lstm.train_memory) && print(io, ", train_memory=true")
     print(io, ")")
 end
-

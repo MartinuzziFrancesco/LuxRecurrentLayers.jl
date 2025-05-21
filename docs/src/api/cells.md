@@ -3,6 +3,7 @@
 ```@docs
     AntisymmetricRNNCell
     ATRCell
+    BRCell
     CFNCell
     coRNNCell
     FastGRNNCell
@@ -10,6 +11,7 @@
     JANETCell
     LEMCell
     MinimalRNNCell
+    PeepholeLSTMCell
     SCRNCell
     STARCell
 ```
