@@ -8,6 +8,7 @@
     coRNNCell
     FastGRNNCell
     FastRNNCell
+    IndRNNCell
     JANETCell
     LEMCell
     MinimalRNNCell
