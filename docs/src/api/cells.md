@@ -13,6 +13,7 @@
     LEMCell
     LightRUCell
     LiGRUCell
+    MGUCell
     MinimalRNNCell
     PeepholeLSTMCell
     SCRNCell
