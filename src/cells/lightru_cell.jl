@@ -1,23 +1,25 @@
-#https://arxiv.org/pdf/1803.04831
+#https://www.mdpi.com/2079-9292/13/16/3204
 @doc raw"""
-    IndRNNCell(in_dims => out_dims, [activation];
+    LightRUCell(in_dims => out_dims, [activation];
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     
-[Independently recurrent cell](https://arxiv.org/pdf/1803.04831).
+[Light recurrent unit](https://www.mdpi.com/2079-9292/13/16/3204).
 
 ## Equations
 ```math
-\mathbf{h}_{t} = \sigma(\mathbf{W} \mathbf{x}_t + \mathbf{u} \odot \mathbf{h}_{t-1} +
-    \mathbf{b})
+\begin{aligned}
+    \tilde{h}_t &= \tanh(W_h x_t), \\
+    f_t         &= \delta(W_f x_t + U_f h_{t-1} + b_f), \\
+    h_t         &= (1 - f_t) \odot h_{t-1} + f_t \odot \tilde{h}_t.
+\end{aligned}
 ```
 
 ## Arguments
 
   - `in_dims`: Input Dimension
   - `out_dims`: Output (Hidden State & Memory) Dimension
-  - 'activation': Activation function. Defaults to `tanh_fast`
 
 ## Keyword Arguments
 
@@ -73,7 +75,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct IndRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct LightRUCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -86,57 +88,63 @@
     use_bias <: StaticBool
 end
 
-function IndRNNCell(
+function LightRUCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
         use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    return IndRNNCell(
+    init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
+    init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
+    return LightRUCell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, indrnn::IndRNNCell)
-    weight_ih = init_rnn_weight(
-        rng, indrnn.init_weight, indrnn.out_dims, (indrnn.out_dims, indrnn.in_dims))
-    weight_hh = vec(init_rnn_weight(rng, indrnn.init_recurrent_weight, indrnn.out_dims,
-        (indrnn.out_dims, 1)))
+function initialparameters(rng::AbstractRNG, lightru::LightRUCell)
+    weight_ih = multi_inits(
+        rng, lightru.init_weight, lightru.out_dims, (lightru.out_dims, lightru.in_dims))
+    weight_hh = init_rnn_weight(rng, lightru.init_recurrent_weight, lightru.out_dims,
+        (lightru.out_dims, lightru.out_dims))
     ps = (; weight_ih, weight_hh)
-    if has_bias(indrnn)
-        bias_ih = init_rnn_bias(rng, indrnn.init_bias, indrnn.out_dims, indrnn.out_dims)
+    if has_bias(lightru)
+        bias_ih = multi_bias(rng, lightru.init_bias, lightru.out_dims, lightru.out_dims)
         bias_hh = init_rnn_bias(
-            rng, indrnn.init_recurrent_bias, indrnn.out_dims, indrnn.out_dims)
+            rng, lightru.init_recurrent_bias, lightru.out_dims, lightru.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh))
     end
-    has_train_state(indrnn) &&
-        (ps = merge(ps, (hidden_state=indrnn.init_state(rng, indrnn.out_dims),)))
+    has_train_state(lightru) &&
+        (ps = merge(ps, (hidden_state=lightru.init_state(rng, lightru.out_dims),)))
     return ps
 end
 
-initialstates(rng::AbstractRNG, ::IndRNNCell) = (rng=Utils.sample_replicate(rng),)
+initialstates(rng::AbstractRNG, ::LightRUCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(indrnn::IndRNNCell)
-    return indrnn.in_dims * indrnn.out_dims + indrnn.out_dims +
-           indrnn.out_dims * 2
+function parameterlength(lightru::LightRUCell)
+    return lightru.in_dims * lightru.out_dims * 2 + lightru.out_dims * lightru.out_dims +
+           lightru.out_dims * 3
 end
 
-function (indrnn::IndRNNCell)(
+function (lightru::LightRUCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state = match_eltype(indrnn, ps, st, inp, state)
+    matched_inp, matched_state = match_eltype(lightru, ps, st, inp, state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     #computation
-    new_state = indrnn.activation.(ps.weight_ih * inp .+ ps.bias_ih .+
-                                   ps.weight_hh .* state .+ ps.bias_hh)
+    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
+    gxs = multigate(full_gxs, Val(2))
+    gh = ps.weight_hh * state .+ bias_hh
+    candidate_state = @. tanh_fast(gxs[1])
+    forget_gate = sigmoid_fast.(gxs[2] .+ gh)
+    new_state = @. (1 - forget_gate) * state + forget_gate * candidate_state
     return (new_state, (new_state,)), st
 end
 
-function Base.show(io::IO, indrnn::IndRNNCell)
-    print(io, "IndRNNCell($(indrnn.in_dims) => $(indrnn.out_dims)")
-    has_bias(indrnn) || print(io, ", use_bias=false")
-    has_train_state(indrnn) && print(io, ", train_state=true")
+function Base.show(io::IO, lightru::LightRUCell)
+    print(io, "LightRUCell($(lightru.in_dims) => $(lightru.out_dims)")
+    has_bias(lightru) || print(io, ", use_bias=false")
+    has_train_state(lightru) && print(io, ", train_state=true")
     print(io, ")")
 end
