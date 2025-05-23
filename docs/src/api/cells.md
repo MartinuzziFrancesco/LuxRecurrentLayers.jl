@@ -12,6 +12,7 @@
     JANETCell
     LEMCell
     LightRUCell
+    LiGRUCell
     MinimalRNNCell
     PeepholeLSTMCell
     SCRNCell
