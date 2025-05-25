@@ -1,6 +1,6 @@
 #https://arxiv.org/pdf/1603.09420
 @doc raw"""
-    MGUCell(in_dims => out_dims, [activation];
+    MGUCell(in_dims => out_dims;
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -143,9 +143,10 @@ function (mgu::MGUCell)(
     whs = multigate(ps.weight_hh, Val(2))
     bhs = multigate(bias_hh, Val(2))
 
-    forget_gate = sigmoid_fast.(gxs[1] .+ whs[1] * state .+ bhs[1])
-    candidate_state = tanh_fast.(gxs[2] .+ whs[2] * (forget_gate .* state) .+ bhs[2])
-    new_state = @. forget_gate * state + (t_ones - forget_gate) * candidate_state
+    forget_gate = sigmoid_fast.(gxs[1] .+ whs[1] * matched_state .+ bhs[1])
+    candidate_state = tanh_fast.(gxs[2] .+ whs[2] * (forget_gate .* matched_state) .+
+                                 bhs[2])
+    new_state = @. forget_gate * matched_state + (t_ones - forget_gate) * candidate_state
     return (new_state, (new_state,)), st
 end
 

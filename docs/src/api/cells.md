@@ -15,6 +15,9 @@
     LiGRUCell
     MGUCell
     MinimalRNNCell
+    MUT1Cell
+    MUT2Cell
+    MUT3Cell
     PeepholeLSTMCell
     SCRNCell
     STARCell
