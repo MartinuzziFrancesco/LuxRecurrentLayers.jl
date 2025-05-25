@@ -104,22 +104,7 @@ function LiGRUCell(
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, ligru::LiGRUCell)
-    weight_ih = multi_inits(
-        rng, ligru.init_weight, ligru.out_dims, (ligru.out_dims, ligru.in_dims))
-    weight_hh = multi_inits(rng, ligru.init_recurrent_weight, ligru.out_dims,
-        (ligru.out_dims, ligru.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(ligru)
-        bias_ih = multi_bias(rng, ligru.init_bias, ligru.out_dims, ligru.out_dims)
-        bias_hh = multi_bias(
-            rng, ligru.init_recurrent_bias, ligru.out_dims, ligru.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(ligru) &&
-        (ps = merge(ps, (hidden_state=ligru.init_state(rng, ligru.out_dims),)))
-    return ps
-end
+initialparameters(rng::AbstractRNG, ligru::LiGRUCell) = multi_initialparameters(rng, ligru)
 
 initialstates(rng::AbstractRNG, ::LiGRUCell) = (rng=Utils.sample_replicate(rng),)
 

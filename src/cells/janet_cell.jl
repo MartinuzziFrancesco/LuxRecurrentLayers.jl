@@ -99,6 +99,7 @@
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
+    init_recurrent_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -109,37 +110,20 @@ end
 
 function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
         init_memory=zeros32, beta::Number=1.0f0)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
+    init_recurrent_bias isa NTuple{2} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return JANETCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_weight, init_recurrent_weight, init_state, init_memory, static(use_bias),
-        beta)
+        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
+        init_memory, static(use_bias), beta)
 end
 
-function initialparameters(rng::AbstractRNG, janet::JANETCell)
-    # weights
-    weight_ih = multi_inits(
-        rng, janet.init_weight, janet.out_dims, (janet.out_dims, janet.in_dims))
-    weight_hh = multi_inits(
-        rng, janet.init_recurrent_weight, janet.out_dims, (janet.out_dims, janet.out_dims))
-    ps = (; weight_ih, weight_hh)
-    # biases
-    if has_bias(janet)
-        bias_ih = multi_bias(rng, janet.init_bias, janet.out_dims, janet.out_dims)
-        bias_hh = multi_bias(rng, janet.init_bias, janet.out_dims, janet.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    # trainable state and/or memory
-    has_train_state(janet) &&
-        (ps = merge(ps, (hidden_state=janet.init_state(rng, janet.out_dims),)))
-    known(janet.train_memory) &&
-        (ps = merge(ps, (memory=janet.init_memory(rng, janet.out_dims),)))
-    return ps
-end
+initialparameters(rng::AbstractRNG, janet::JANETCell) = multi_initialparameters(rng, janet)
 
 function (janet::JANETCell)(
         (inp,

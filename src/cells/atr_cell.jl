@@ -92,19 +92,7 @@ function ATRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
 end
 
 function initialparameters(rng::AbstractRNG, atr::ATRCell)
-    weight_ih = init_rnn_weight(
-        rng, atr.init_weight, atr.out_dims, (atr.out_dims, atr.in_dims))
-    weight_hh = init_rnn_weight(rng, atr.init_recurrent_weight, atr.out_dims,
-        (atr.out_dims, atr.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(atr)
-        bias_ih = init_rnn_bias(rng, atr.init_bias, atr.out_dims, atr.out_dims)
-        bias_hh = init_rnn_bias(rng, atr.init_recurrent_bias, atr.out_dims, atr.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(atr) &&
-        (ps = merge(ps, (hidden_state=atr.init_state(rng, atr.out_dims),)))
-    return ps
+    return single_initialparameters(rng, atr)
 end
 
 initialstates(rng::AbstractRNG, ::ATRCell) = (rng=Utils.sample_replicate(rng),)

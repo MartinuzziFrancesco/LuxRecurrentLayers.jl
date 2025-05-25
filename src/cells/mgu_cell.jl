@@ -104,24 +104,7 @@ function MGUCell(
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, mgu::MGUCell)
-    weight_ih = multi_inits(
-        rng, mgu.init_weight, mgu.out_dims, (mgu.out_dims, mgu.in_dims))
-    weight_hh = multi_inits(rng, mgu.init_recurrent_weight, mgu.out_dims,
-        (mgu.out_dims, mgu.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(mgu)
-        bias_ih = multi_bias(rng, mgu.init_bias, mgu.out_dims, mgu.out_dims)
-        bias_hh = multi_bias(
-            rng, mgu.init_recurrent_bias, mgu.out_dims, mgu.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(mgu) &&
-        (ps = merge(ps, (hidden_state=mgu.init_state(rng, mgu.out_dims),)))
-    return ps
-end
-
-initialstates(rng::AbstractRNG, ::MGUCell) = (rng=Utils.sample_replicate(rng),)
+initialparameters(rng::AbstractRNG, mgu::MGUCell) = multi_initialparameters(rng, mgu)
 
 function parameterlength(mgu::MGUCell)
     return mgu.in_dims * mgu.out_dims * 2 + mgu.out_dims * mgu.out_dims * 2 +

@@ -105,20 +105,7 @@ function AntisymmetricRNNCell(
 end
 
 function initialparameters(rng::AbstractRNG, asymrnn::AntisymmetricRNNCell)
-    weight_ih = init_rnn_weight(
-        rng, asymrnn.init_weight, asymrnn.out_dims, (asymrnn.out_dims, asymrnn.in_dims))
-    weight_hh = init_rnn_weight(
-        rng, asymrnn.init_recurrent_weight, asymrnn.out_dims,
-        (asymrnn.out_dims, asymrnn.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(asymrnn)
-        bias_ih = init_rnn_bias(rng, asymrnn.init_bias, asymrnn.out_dims, asymrnn.out_dims)
-        bias_hh = init_rnn_bias(rng, asymrnn.init_bias, asymrnn.out_dims, asymrnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(asymrnn) &&
-        (ps = merge(ps, (hidden_state=asymrnn.init_state(rng, asymrnn.out_dims),)))
-    return ps
+    return single_initialparameters(rng, asymrnn)
 end
 
 function parameterlength(asymrnn::AntisymmetricRNNCell)

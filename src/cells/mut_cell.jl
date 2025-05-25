@@ -105,22 +105,7 @@ function MUT1Cell(
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, mut::MUT1Cell)
-    weight_ih = multi_inits(
-        rng, mut.init_weight, mut.out_dims, (mut.out_dims, mut.in_dims))
-    weight_hh = multi_inits(rng, mut.init_recurrent_weight, mut.out_dims,
-        (mut.out_dims, mut.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(mut)
-        bias_ih = multi_bias(rng, mut.init_bias, mut.out_dims, mut.out_dims)
-        bias_hh = multi_bias(
-            rng, mut.init_recurrent_bias, mut.out_dims, mut.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(mut) &&
-        (ps = merge(ps, (hidden_state=mut.init_state(rng, mut.out_dims),)))
-    return ps
-end
+initialparameters(rng::AbstractRNG, mut::MUT1Cell) = multi_initialparameters(rng, mut)
 
 initialstates(rng::AbstractRNG, ::MUT1Cell) = (rng=Utils.sample_replicate(rng),)
 
@@ -266,22 +251,7 @@ function MUT2Cell(
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, mut::MUT2Cell)
-    weight_ih = multi_inits(
-        rng, mut.init_weight, mut.out_dims, (mut.out_dims, mut.in_dims))
-    weight_hh = multi_inits(rng, mut.init_recurrent_weight, mut.out_dims,
-        (mut.out_dims, mut.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(mut)
-        bias_ih = multi_bias(rng, mut.init_bias, mut.out_dims, mut.out_dims)
-        bias_hh = multi_bias(
-            rng, mut.init_recurrent_bias, mut.out_dims, mut.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(mut) &&
-        (ps = merge(ps, (hidden_state=mut.init_state(rng, mut.out_dims),)))
-    return ps
-end
+initialparameters(rng::AbstractRNG, mut::MUT2Cell) = multi_initialparameters(rng, mut)
 
 initialstates(rng::AbstractRNG, ::MUT2Cell) = (rng=Utils.sample_replicate(rng),)
 
@@ -426,22 +396,7 @@ function MUT3Cell(
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
 
-function initialparameters(rng::AbstractRNG, mut::MUT3Cell)
-    weight_ih = multi_inits(
-        rng, mut.init_weight, mut.out_dims, (mut.out_dims, mut.in_dims))
-    weight_hh = multi_inits(rng, mut.init_recurrent_weight, mut.out_dims,
-        (mut.out_dims, mut.out_dims))
-    ps = (; weight_ih, weight_hh)
-    if has_bias(mut)
-        bias_ih = multi_bias(rng, mut.init_bias, mut.out_dims, mut.out_dims)
-        bias_hh = multi_bias(
-            rng, mut.init_recurrent_bias, mut.out_dims, mut.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    has_train_state(mut) &&
-        (ps = merge(ps, (hidden_state=mut.init_state(rng, mut.out_dims),)))
-    return ps
-end
+initialparameters(rng::AbstractRNG, mut::MUT3Cell) = multi_initialparameters(rng, mut)
 
 initialstates(rng::AbstractRNG, ::MUT3Cell) = (rng=Utils.sample_replicate(rng),)
 

@@ -54,22 +54,7 @@ function FastRNNCell(
 end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
-    #matrices
-    weight_ih = init_rnn_weight(
-        rng, fastrnn.init_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.in_dims))
-    weight_hh = init_rnn_weight(
-        rng, fastrnn.init_recurrent_weight, fastrnn.out_dims,
-        (fastrnn.out_dims, fastrnn.out_dims))
-    ps = (; weight_ih, weight_hh)
-    #biases
-    if has_bias(fastrnn)
-        bias_ih = init_rnn_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
-        bias_hh = init_rnn_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
-    end
-    # trainable state or memory
-    has_train_state(fastrnn) &&
-        (ps = merge(ps, (hidden_state=fastrnn.init_state(rng, fastrnn.out_dims),)))
+    ps = single_initialparameters(rng, fastrnn)
     # any additional trainable parameters
     alpha = fastrnn.init_alpha .* ones(1)
     beta = fastrnn.init_beta .* ones(1)
