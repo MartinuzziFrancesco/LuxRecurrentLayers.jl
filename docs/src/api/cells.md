@@ -18,6 +18,7 @@
     MUT1Cell
     MUT2Cell
     MUT3Cell
+    NASCell
     PeepholeLSTMCell
     SCRNCell
     STARCell
