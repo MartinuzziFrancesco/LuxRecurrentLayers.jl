@@ -188,7 +188,7 @@ function (nas::NASCell)(
     l2_4 = @. sigmoid_fast(layer1_7 + layer1_8)
 
     #inject cell
-    l2_1 = @. tanh_fast(l2_1 + c_state)
+    l2_1 = @. tanh_fast(l2_1 + matched_cstate)
 
     # Third layer
     new_cstate = l2_1 .* l2_2
