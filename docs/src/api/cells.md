@@ -15,6 +15,7 @@
     LiGRUCell
     MGUCell
     MinimalRNNCell
+    MultiplicativeLSTMCell
     MUT1Cell
     MUT2Cell
     MUT3Cell
