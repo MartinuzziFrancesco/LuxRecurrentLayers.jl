@@ -22,6 +22,7 @@
     NASCell
     NBRCell
     PeepholeLSTMCell
+    RANCell
     SCRNCell
     SGRNCell
     STARCell
