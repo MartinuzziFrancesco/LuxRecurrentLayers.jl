@@ -22,6 +22,7 @@
     NASCell
     PeepholeLSTMCell
     SCRNCell
+    SGRNCell
     STARCell
     UnICORNNCell
 ```
