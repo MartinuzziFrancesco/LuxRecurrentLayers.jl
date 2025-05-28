@@ -23,4 +23,5 @@
     PeepholeLSTMCell
     SCRNCell
     STARCell
+    UnICORNNCell
 ```
