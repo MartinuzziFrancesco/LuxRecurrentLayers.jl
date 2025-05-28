@@ -12,19 +12,10 @@
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{m}_t &= (\mathbf{W}_{mx} \mathbf{x}_t) \circ (\mathbf{W}_{mh}
-        \mathbf{h}_{t-1}), \\
-    \hat{\mathbf{h}}_t &= \mathbf{W}_{hx} \mathbf{x}_t + \mathbf{W}_{hm}
-        \mathbf{m}_t, \\
-    \mathbf{i}_t &= \sigma(\mathbf{W}_{ix} \mathbf{x}_t + \mathbf{W}_{im}
-        \mathbf{m}_t), \\
-    \mathbf{o}_t &= \sigma(\mathbf{W}_{ox} \mathbf{x}_t + \mathbf{W}_{om}
-        \mathbf{m}_t), \\
-    \mathbf{f}_t &= \sigma(\mathbf{W}_{fx} \mathbf{x}_t + \mathbf{W}_{fm}
-        \mathbf{m}_t), \\
-    \mathbf{c}_t &= \mathbf{f}_t \circ \mathbf{c}_{t-1} + \mathbf{i}_t \circ
-        \tanh(\hat{\mathbf{h}}_t), \\
-    \mathbf{h}_t &= \tanh(\mathbf{c}_t) \circ \mathbf{o}_t.
+    y_n &= y_{n-1} + \Delta t \, \hat{\sigma}(c) \odot z_n, \\
+    z_n &= z_{n-1} - \Delta t \, \hat{\sigma}(c) \odot \left[ 
+        \sigma \left( w \odot y_{n-1} + V y_{n-1} + b \right) + 
+        \alpha y_{n-1} \right].
 \end{aligned}
 ```
 
