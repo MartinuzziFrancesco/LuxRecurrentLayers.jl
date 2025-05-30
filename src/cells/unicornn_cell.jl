@@ -136,7 +136,8 @@ function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
     ps = (; weight_ih, weight_hh, weight_ch)
     # biases
     if has_bias(unicornn)
-        bias_ih = init_rnn_bias(rng, unicornn.init_bias, unicornn.out_dims, unicornn.out_dims)
+        bias_ih = init_rnn_bias(
+            rng, unicornn.init_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_ih))
     end
     # trainable state and/or memory
@@ -163,8 +164,10 @@ function (unicornn::UnICORNNCell)(
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     #gates
     dt, alpha = unicornn.dt, unicornn.alpha
-    new_cstate = matched_cstate .- dt .* sigmoid_fast.(ps.weight_ch) .*
-                 (tanh_fast.(ps.weight_hh .* state .+ ps.weight_ih * inp .+ bias_ih) .+ alpha .* matched_state)
+    new_cstate = matched_cstate .-
+                 dt .* sigmoid_fast.(ps.weight_ch) .*
+                 (tanh_fast.(ps.weight_hh .* state .+ ps.weight_ih * inp .+ bias_ih) .+
+                  alpha .* matched_state)
     new_state = state .+ dt .* sigmoid_fast.(ps.weight_ch) .* new_cstate
     return (new_state, (new_state, new_cstate)), st
 end

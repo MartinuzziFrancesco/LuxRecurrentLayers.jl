@@ -144,7 +144,8 @@ function MultiplicativeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:Integ
     init_bias isa NTuple{5} || (init_bias = ntuple(Returns(init_bias), 5))
     init_multiplicative_bias isa NTuple{4} ||
         (init_multiplicative_bias = ntuple(Returns(init_multiplicative_bias), 4))
-    return MultiplicativeLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
+    return MultiplicativeLSTMCell(
+        static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_multiplicative_bias, init_weight, init_recurrent_weight,
         init_multiplicative_weight, init_state, init_memory, static(use_bias))
 end
@@ -162,7 +163,8 @@ function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
         bias_hh = init_rnn_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
-        bias_mh = multi_bias(rng, lstm.init_multiplicative_bias, lstm.out_dims, lstm.out_dims)
+        bias_mh = multi_bias(
+            rng, lstm.init_multiplicative_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh, bias_mh))
     end
     # trainable state and/or memory
@@ -194,8 +196,9 @@ function (lstm::MultiplicativeLSTMCell)(
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(5))
-    multiplicative_state =  gxs[1] .* ghs
-    full_gms = fused_dense_bias_activation(identity, ps.weight_mh, multiplicative_state, bias_mh)
+    multiplicative_state = gxs[1] .* ghs
+    full_gms = fused_dense_bias_activation(
+        identity, ps.weight_mh, multiplicative_state, bias_mh)
     gms = multigate(full_gms, Val(4))
     input_gate = @. sigmoid_fast(gxs[2] + gms[1])
     output_gate = @. sigmoid_fast(gxs[3] + gms[2])

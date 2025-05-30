@@ -19,9 +19,10 @@ BoolType = Utils.BoolType
 @compat(public, (initialparameters, initialstates, parameterlength, statelength))
 
 export AntisymmetricRNNCell, ATRCell, BRCell, CFNCell, coRNNCell, FastGRNNCell,
-       FastRNNCell, IndRNNCell, JANETCell, LEMCell, LightRUCell, LiGRUCell, MGUCell,
-       MinimalRNNCell, MultiplicativeLSTMCell, MUT1Cell, MUT2Cell, MUT3Cell, NASCell,
-       NBRCell, PeepholeLSTMCell, RANCell, SCRNCell, SGRNCell, STARCell, UnICORNNCell
+       FastRNNCell, GatedAntisymmetricRNNCell, IndRNNCell, JANETCell, LEMCell, LightRUCell,
+       LiGRUCell, MGUCell, MinimalRNNCell, MultiplicativeLSTMCell, MUT1Cell, MUT2Cell,
+       MUT3Cell, NASCell, NBRCell, PeepholeLSTMCell, RANCell, SCRNCell, SGRNCell,
+       STARCell, UnICORNNCell
 
 include("generics.jl")
 

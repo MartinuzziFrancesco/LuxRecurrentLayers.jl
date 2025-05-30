@@ -143,7 +143,8 @@ function (br::BRCell)(
     modulation_gate = @. t_ones + tanh_fast(xs[1] + ws[1] * matched_state + bhs[1])
     candidate_state = @. sigmoid_fast(xs[2] + ws[2] * matched_state + bhs[2])
     new_state = @. candidate_state * matched_state +
-                   (t_ones - candidate_state) * tanh_fast(xs[3] + modulation_gate * matched_state + bhs[3])
+                   (t_ones - candidate_state) *
+                   tanh_fast(xs[3] + modulation_gate * matched_state + bhs[3])
 
     return (new_state, (new_state,)), st
 end
@@ -154,7 +155,6 @@ function Base.show(io::IO, br::BRCell)
     has_train_state(br) && print(io, ", train_state=true")
     print(io, ")")
 end
-
 
 @doc raw"""
     NBRCell(in_dims => out_dims;
@@ -256,7 +256,8 @@ function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
-    init_recurrent_bias isa NTuple{2} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_recurrent_bias isa NTuple{2} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return NBRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
@@ -290,7 +291,8 @@ function (nbr::NBRCell)(
     modulation_gate = @. t_ones + tanh_fast(xs[1] + hs[1])
     candidate_state = @. sigmoid_fast(xs[2] + hs[2])
     new_state = @. candidate_state * matched_state +
-                   (t_ones - candidate_state) * tanh_fast(xs[3] + modulation_gate * matched_state)
+                   (t_ones - candidate_state) *
+                   tanh_fast(xs[3] + modulation_gate * matched_state)
     return (new_state, (new_state,)), st
 end
 

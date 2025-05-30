@@ -8,6 +8,7 @@
     coRNNCell
     FastGRNNCell
     FastRNNCell
+    GatedAntisymmetricRNNCell
     IndRNNCell
     JANETCell
     LEMCell
