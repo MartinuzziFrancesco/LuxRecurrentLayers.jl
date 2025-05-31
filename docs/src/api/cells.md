@@ -28,4 +28,5 @@
     SGRNCell
     STARCell
     UnICORNNCell
+    WMCLSTMCell
 ```
