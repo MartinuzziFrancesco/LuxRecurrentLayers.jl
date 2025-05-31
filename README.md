@@ -49,6 +49,15 @@ LuxRecurrentLayers.jl extends [Lux.jl](https://github.com/LuxDL/Lux.jl)
 recurrent layers offering by providing implementations of additional
 recurrent layers not available in base deep learning libraries.
 
+## Installation
+
+LuxRecurrentLayers.jl is not on the general registry yet! To install it please
+use:
+```julia_repl
+julia> ]
+Pkg> add https://github.com/MartinuzziFrancesco/LuxRecurrentLayers.jl
+```
+
 ## Quick Example
 
 ```julia
