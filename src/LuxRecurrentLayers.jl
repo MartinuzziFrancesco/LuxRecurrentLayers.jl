@@ -22,7 +22,7 @@ export AntisymmetricRNNCell, ATRCell, BRCell, CFNCell, coRNNCell, FastGRNNCell,
        FastRNNCell, GatedAntisymmetricRNNCell, IndRNNCell, JANETCell, LEMCell, LightRUCell,
        LiGRUCell, MGUCell, MinimalRNNCell, MultiplicativeLSTMCell, MUT1Cell, MUT2Cell,
        MUT3Cell, NASCell, NBRCell, PeepholeLSTMCell, RANCell, SCRNCell, SGRNCell,
-       STARCell, TRNNCell, UnICORNNCell, WMCLSTMCell
+       STARCell, TGRUCell, TRNNCell, UnICORNNCell, WMCLSTMCell
 
 include("generics.jl")
 

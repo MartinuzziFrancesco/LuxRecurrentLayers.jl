@@ -7,6 +7,15 @@
 
 [Strongly typed recurrent unit](https://arxiv.org/abs/1602.02218).
 
+## Equations
+```math
+\begin{aligned}
+    z_t &= \mathbf{W} x_t \\
+    f_t &= \sigma (\mathbf{V} x_t + b) \\
+    h_t &= f_t \odot h_{t-1} + (1 - f_t) \odot z_t
+\end{aligned}
+```
+
 ## Arguments
 
   - `in_dims`: Input Dimension
@@ -133,5 +142,179 @@ function Base.show(io::IO, trnn::TRNNCell)
     print(io, "TRNNCell($(trnn.in_dims) => $(trnn.out_dims)")
     has_bias(trnn) || print(io, ", use_bias=false")
     has_train_state(trnn) && print(io, ", train_state=true")
+    print(io, ")")
+end
+
+#https://arxiv.org/abs/2109.00020
+@doc raw"""
+    TGRUCell(in_dims => out_dims;
+        use_bias=true, train_state=false, train_memory=false,
+        init_bias=nothing, init_recurrent_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32, init_memory=zeros32)
+
+
+[Strongly typed gated recurrent unit](https://arxiv.org/abs/1602.02218).
+
+## Equations
+```math
+\begin{aligned}
+    z_t &= \mathbf{V}_z \mathbf{x}_{t-1} + \mathbf{W}_z \mathbf{x}_t + \mathbf{b}_z \\
+    f_t &= \sigma (\mathbf{V}_f \mathbf{x}_{t-1} + \mathbf{W}_f \mathbf{x}_t +
+        \mathbf{b}_f) \\
+    o_t &= \tau (\mathbf{V}_o \mathbf{x}_{t-1} + \mathbf{W}_o \mathbf{x}_t + \mathbf{b}_o) \\
+    h_t &= f_t \odot h_{t-1} + z_t \odot o_t
+\end{aligned}
+```
+
+## Arguments
+
+  - `in_dims`: Input Dimension
+  - `out_dims`: Output (Hidden State & Memory) Dimension
+
+## Keyword Arguments
+
+  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable.
+    Default set to `false`.
+  - `train_memory`: Flag to set the initial memory state as trainable.
+    Default set to `false`.
+  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
+    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 4 functions. If a single
+    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
+    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 3 functions. If a
+    single value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
+    uniform distribution with bounds `-bound` and `bound` where
+    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+  - `init_memory`: Initializer for memory. Default set to `zeros32`.
+
+## Inputs
+
+  - Case 1a: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `false` - Creates a hidden state using
+             `init_state`, hidden memory using `init_memory` and proceeds to Case 2.
+  - Case 1b: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `false` - Repeats `hidden_state` vector
+             from the parameters to match the shape of `x`, creates hidden memory using
+             `init_memory` and proceeds to Case 2.
+  - Case 1c: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `true` - Creates a hidden state using
+             `init_state`, repeats the memory vector from parameters to match the shape of
+             `x` and proceeds to Case 2.
+  - Case 1d: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `true` - Repeats the hidden state and
+             memory vectors from the parameters to match the shape of  `x` and proceeds to
+             Case 2.
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+            updated hidden state and memory is returned.
+
+## Returns
+
+  - Tuple Containing
+
+      + Output ``h_{new}`` of shape `(out_dims, batch_size)`
+      + Tuple containing new hidden state ``h_{new}`` and new memory ``c_{new}``
+
+  - Updated model state
+
+## Parameters
+
+  - `weight_ih`: Concatenated Weights to map from input space
+                 ``\{ W_{if}, W_{ic}, W_{ii}, W_{io} \}``.
+  - `weight_hh`: Concatenated weights to map from hidden space
+                 ``\{ W_{hf}, W_{hc}, W_{hi}, W_{ho} \}``
+  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
+    `use_bias=false`)
+  - `bias_ph`: Concatenated Bias vector for the memory-hidden connection (not present if
+    `use_bias=false`)
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
+  - `memory`: Initial memory vector (not present if `train_memory=false`)
+
+## States
+
+  - `rng`: Controls the randomness (if any) in the initial state generation
+
+"""
+@concrete struct TGRUCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
+    train_state::TS
+    train_memory::TM
+    in_dims <: IntegerType
+    out_dims <: IntegerType
+    init_bias
+    init_recurrent_bias
+    init_weight
+    init_recurrent_weight
+    init_state
+    init_memory
+    use_bias <: StaticBool
+end
+
+function TGRUCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing,
+        init_state=zeros32, init_memory=zeros32)
+    init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
+    init_recurrent_weight isa NTuple{3} ||
+        (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
+    init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
+    init_recurrent_bias isa NTuple{3} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
+    return TGRUCell(static(train_state), static(train_memory), in_dims, out_dims,
+        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
+        init_state, init_memory, static(use_bias))
+end
+
+function initialparameters(rng::AbstractRNG, tgru::TGRUCell)
+    return multi_initialparameters(rng, tgru)
+end
+
+function parameterlength(tgru::TGRUCell)
+    return tgru.in_dims * tgru.out_dims * 3 + tgru.out_dims * tgru.out_dims * 3 +
+           tgru.out_dims * 6
+end
+
+function (tgru::TGRUCell)(
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
+    #type match
+    matched_inp, matched_state, matched_cstate = match_eltype(
+        tgru, ps, st, inp, state, c_state)
+    #get bias
+    bias_ih = safe_getproperty(ps, Val(:bias_ih))
+    bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_ph = safe_getproperty(ps, Val(:bias_ph))
+    #gates
+    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
+    full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_cstate, bias_hh)
+    fused_gates = @. full_gxs + full_ghs
+    gates = multigate(fused_gates, Val(3))
+
+    update_gate = @. sigmoid_fast(gates[2])
+    candidate_state = @. tanh_fast(gates[3])
+    new_state = @. update_gate * matched_state + gates[1] * candidate_state
+    new_cstate = inp
+    return (new_state, (new_state, new_cstate)), st
+end
+
+function Base.show(io::IO, tgru::TGRUCell)
+    print(io, "TGRUCell($(tgru.in_dims) => $(tgru.out_dims)")
+    has_bias(tgru) || print(io, ", use_bias=false")
+    has_train_state(tgru) && print(io, ", train_state=true")
+    known(tgru.train_memory) && print(io, ", train_memory=true")
     print(io, ")")
 end
