@@ -11,7 +11,7 @@ using Lux: Utils, init_rnn_hidden_state, init_trainable_rnn_hidden_state, match_
 import Lux: initialparameters, initialstates, parameterlength, statelength
 using NNlib: NNlib, sigmoid_fast, tanh_fast, relu
 using Random: AbstractRNG
-using Static: StaticBool, StaticInt, StaticSymbol, True, False, static
+using Static: StaticBool, StaticInt, StaticSymbol, True, False, static, Static
 
 IntegerType = Utils.IntegerType
 BoolType = Utils.BoolType
@@ -22,7 +22,7 @@ export AntisymmetricRNNCell, ATRCell, BRCell, CFNCell, coRNNCell, FastGRNNCell,
        FastRNNCell, GatedAntisymmetricRNNCell, IndRNNCell, JANETCell, LEMCell, LightRUCell,
        LiGRUCell, MGUCell, MinimalRNNCell, MultiplicativeLSTMCell, MUT1Cell, MUT2Cell,
        MUT3Cell, NASCell, NBRCell, PeepholeLSTMCell, RANCell, SCRNCell, SGRNCell,
-       STARCell, TGRUCell, TRNNCell, UnICORNNCell, WMCLSTMCell
+       STARCell, TGRUCell, TLSTMCell, TRNNCell, UnICORNNCell, WMCLSTMCell
 
 include("generics.jl")
 

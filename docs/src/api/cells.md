@@ -27,6 +27,9 @@
     SCRNCell
     SGRNCell
     STARCell
+    TGRUCell
+    TLSTMCell
+    TRNNCell
     UnICORNNCell
     WMCLSTMCell
 ```
