@@ -2,51 +2,46 @@
 @doc raw"""
     AntisymmetricRNNCell(in_dims => out_dims, [activation];
         use_bias=true, train_state=false, init_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32, epsilon=1.0, gamma=0.0)
+        init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
+        epsilon=1.0, gamma=0.0)
 
 
 [Antisymmetric recurrent cell](https://arxiv.org/abs/1902.09689).
 
 ## Equations
+
 ```math
-h_t = h_{t-1} + \epsilon \tanh \left( (W_h - W_h^T - \gamma I) h_{t-1} + V_h x_t + b_h \right),
+    h(t) = h(t-1) + \epsilon \cdot \tanh \left( (W_{hh} - W_{hh}^T - \gamma \cdot I)
+        h(t-1) + b_{hh} + W_{ih} x(t) + b_{ih} \right)
 ```
 
 ## Arguments
 
-  - `in_dims`: Input Dimension
-  - `out_dims`: Output (Hidden State & Memory) Dimension
+  - `in_dims`: Input dimension
+  - `out_dims`: Output (Hidden State & Memory) dimension
   - `activation`: activation function. Default is `tanh`
 
 # Keyword arguments
 
-
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
-    Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_context_weight`: Initializer for context weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for bias $b_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_bias`: Initializer for recurrent bias $b_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_weight`: Initializer for weight $W_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight $W_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
-  - `init_memory`: Initializer for memory. Default set to `zeros32`.
-  - `epsilon`: step size. Default is 1.0.
-  - `gamma`: strength of diffusion. Default is 0.0.
+  - `epsilon`: step size $\epsilon$. Default is 1.0.
+  - `gamma`: strength of diffusion $\gamma$. Default is 0.0.
 
 ## Inputs
 
@@ -70,10 +65,12 @@ h_t = h_{t-1} + \epsilon \tanh \left( (W_h - W_h^T - \gamma I) h_{t-1} + V_h x_t
 
 ## Parameters
 
-  - `weight_ih`: Maps the input to the hidden state.
-  - `weight_hh`: Maps the hidden state to the hidden state.
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  - `weight_ih`: Concatenated weights to map from input to the hidden state $W_{ih}$.
+  - `weight_hh`: Concatenated weights to map from hidden to the hidden state $W_{hh}$.
+  - `bias_ih`: Bias vector for the input-hidden connection (not present if
+      `use_bias=false`) $b_{ih}$.
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
+      `use_bias=false`) $b_{hh}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -87,6 +84,7 @@ h_t = h_{t-1} + \epsilon \tanh \left( (W_h - W_h^T - \gamma I) h_{t-1} + V_h x_t
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
+    init_recurrent_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -98,10 +96,12 @@ end
 function AntisymmetricRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
         use_bias::BoolType=True(), train_state::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
         epsilon=1.0f0, gamma=0.0f0)
     return AntisymmetricRNNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_weight, init_recurrent_weight, init_state, static(use_bias), epsilon, gamma)
+        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
+        static(use_bias), epsilon, gamma)
 end
 
 function initialparameters(rng::AbstractRNG, asymrnn::AntisymmetricRNNCell)
@@ -110,7 +110,7 @@ end
 
 function parameterlength(asymrnn::AntisymmetricRNNCell)
     return asymrnn.in_dims * asymrnn.out_dims + asymrnn.out_dims * asymrnn.out_dims +
-           asymrnn.out_dims
+           asymrnn.out_dims * 2
 end
 
 function (asymrnn::AntisymmetricRNNCell)(
@@ -143,18 +143,21 @@ end
 @doc raw"""
     GatedAntisymmetricRNNCell(in_dims => out_dims, [activation];
         use_bias=true, train_state=false, init_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32, epsilon=1.0, gamma=0.0)
+        init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
+        epsilon=1.0, gamma=0.0)
 
 
 
 [Antisymmetric recurrent cell with gating](https://arxiv.org/abs/1902.09689).
 
 ## Equations
+
 ```math
-    z_t &= \sigma ( (W_h - W_h^T - \gamma I) h_{t-1} + V_z x_t + b_z ), \\
-    h_t &= h_{t-1} + \epsilon z_t \odot \tanh ( (W_h - W_h^T - \gamma I) h_{t-1}
-        + V_h x_t + b_h ).
+    z(t) &= \sigma ( (W_{hh} - W_{hh}^T - \gamma \cdot I) h(t-1)
+        + b_{hh} + W_{ih}^z x(t) + b_{ih}^z ), \\
+    h(t) &= h(t-1) + \epsilon \cdot z(t) \odot \tanh ( (W_{hh} - W_{hh}^T -
+        \gamma \cdot I) h(t-1) + b_{hh} + W_{ih}^x x(t) + b_{ih}^h ).
 ```
 
 ## Arguments
@@ -169,26 +172,25 @@ end
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
-    Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_context_weight`: Initializer for context weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input to hidden bias $b_{ih}^z, b_{ih}^h$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 2-element
+    tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias $b_{hh}$. If set to `nothing`,
+    weights are initialized from a uniform distribution within `[-bound, bound]` where
+    `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weights $W_{ih}^z, W_{ih}^x$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 2-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight $W_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
-  - `init_memory`: Initializer for memory. Default set to `zeros32`.
   - `epsilon`: step size. Default is 1.0.
   - `gamma`: strength of diffusion. Default is 0.0.
 
@@ -214,10 +216,17 @@ end
 
 ## Parameters
 
-  - `weight_ih`: Maps the input to the hidden state.
-  - `weight_hh`: Maps the hidden state to the hidden state.
+  - `weight_ih`: Concatenated weights to map from input to the hidden state.
+                 ``\{ W_{ih}^z, W_{ih}^h \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $W_{ih}^z$, and the second for $W_{ih}^h$.
+  - `weight_hh`: Weights to map the hidden state to the hidden state $W_{hh}$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+                 ``\{ b_{ih}^z, b_{ih}^h \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $b_{ih}^z$, and the second for $b_{ih}^h$.
   - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+    $b_{hh}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
