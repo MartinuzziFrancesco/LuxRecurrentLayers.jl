@@ -8,15 +8,18 @@
 [Bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
+
 ```math
 \begin{aligned}
-    \mathbf{h}_t &= \mathbf{c}_t \circ \mathbf{h}_{t-1} + (1 - \mathbf{c}_t)
-        \circ \tanh\left(\mathbf{U}_x \mathbf{x}_t + \mathbf{a}_t \circ
-        \mathbf{h}_{t-1}\right), \\
-    \mathbf{a}_t &= 1 + \tanh\left(\mathbf{U}_a \mathbf{x}_t +
-        \mathbf{w}_a \circ \mathbf{h}_{t-1}\right), \\
-    \mathbf{c}_t &= \sigma\left(\mathbf{U}_c \mathbf{x}_t + \mathbf{w}_c \circ
-        \mathbf{h}_{t-1}\right).
+    \mathbf{a}(t) &= 1 + \tanh\left(\mathbf{W}_{ih}^{a} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^a + \mathbf{w}_{hh}^{a} \circ \mathbf{h}(t-1)\right) +
+        \mathbf{b}_{hh}^a\\
+    \mathbf{c}(t) &= \sigma\left(\mathbf{W}_{ih}^{c} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^c + \mathbf{w}_{hh}^{c} \circ \mathbf{h}(t-1)\right) +
+        \mathbf{b}_{hh}^c\\
+    \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
+        \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
+        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right)
 \end{aligned}
 ```
 
@@ -30,18 +33,34 @@
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input to hidden bias
+    $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 
+    3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
+    uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias
+    $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 
+    2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
+    uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weights
+    $\mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 3-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for input to hidden weights
+    $\mathbf{w}_{hh}^a, \mathbf{w}_{hh}^c$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 2-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
 
 ## Inputs
@@ -66,12 +85,26 @@
 
 ## Parameters
 
-  -  `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ U_x, U_a, U_c \}``.
-  - `weight_hh`: Concatenated Weights to map from hidden space
-                 ``\{ a, w_a, w_c \}``
+    - `weight_ih`: Concatenated weights to map from input to the hidden state
+                 ``\{ \mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{W}_{ih}^a$, the second for $\mathbf{W}_{ih}^c$,
+    and the third for $\mathbf{W}_{ih}^h$.
+  - `weight_hh`: Weights to map the hidden state to the hidden state
+                 ``\{ \mathbf{w}_{hh}^a, \mathbf{w}_{hh}^c \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{w}_{hh}^a$, and the second for
+    $\mathbf{w}_{hh}^c$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{ih}^z$, the second for
+    $\mathbf{b}_{ih}^c$, and the third for $\mathbf{b}_{ih}^h$.
+  - `bias_hh`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{hh}^z$, and the second for
+    $\mathbf{b}_{hh}^c$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -165,15 +198,18 @@ end
 [Recurrently neuromodulated bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
+
 ```math
 \begin{aligned}
-    \mathbf{a}_t &= 1 + \tanh\left(\mathbf{U}_a \mathbf{x}_t + \mathbf{W}_a
-        \mathbf{h}_{t-1}\right), \\
-    \mathbf{c}_t &= \sigma\left(\mathbf{U}_c \mathbf{x}_t + \mathbf{W}_c
-        \mathbf{h}_{t-1}\right), \\
-    \mathbf{h}_t &= \mathbf{c}_t \circ \mathbf{h}_{t-1} + (1 - \mathbf{c}_t)
-        \circ \tanh\left(\mathbf{U}_x \mathbf{x}_t + \mathbf{a}_t \circ
-        \mathbf{h}_{t-1}\right).
+    \mathbf{a}(t) &= 1 + \tanh\left(\mathbf{W}_{ih}^{a} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^a + \mathbf{W}_{hh}^{a} \circ \mathbf{h}(t-1)\right) +
+        \mathbf{b}_{hh}^a\\
+    \mathbf{c}(t) &= \sigma\left(\mathbf{W}_{ih}^{c} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^c + \mathbf{W}_{hh}^{c} \circ \mathbf{h}(t-1)\right) +
+        \mathbf{b}_{hh}^c\\
+    \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
+        \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
+        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right) 
 \end{aligned}
 ```
 
@@ -187,18 +223,34 @@ end
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input to hidden bias
+    $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 
+    3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
+    uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias
+    $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 
+    2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
+    uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weights
+    $\mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 3-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for input to hidden weights
+    $\mathbf{W}_{hh}^a, \mathbf{W}_{hh}^c$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 2-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
 
 ## Inputs
@@ -223,12 +275,26 @@ end
 
 ## Parameters
 
-  -  `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ U_x, U_a, U_c \}``.
-  - `weight_hh`: Concatenated Weights to map from hidden space
-                 ``\{ a, w_a, w_c \}``
+    - `weight_ih`: Concatenated weights to map from input to the hidden state
+                 ``\{ \mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{W}_{ih}^a$, the second for $\mathbf{W}_{ih}^c$,
+    and the third for $\mathbf{W}_{ih}^h$.
+  - `weight_hh`: Weights to map the hidden state to the hidden state
+                 ``\{ \mathbf{W}_{hh}^a, \mathbf{W}_{hh}^c \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{W}_{hh}^a$, and the second for
+    $\mathbf{W}_{hh}^c$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{ih}^z$, the second for
+    $\mathbf{b}_{ih}^c$, and the third for $\mathbf{b}_{ih}^h$.
+  - `bias_hh`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{hh}^z$, and the second for
+    $\mathbf{b}_{hh}^c$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
