@@ -2,10 +2,23 @@
 @doc raw"""
     ATRCell(in_dims => out_dims;
         use_bias=true, train_state=false, init_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+        init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32)
 
 [Addition-subtraction twin-gated recurrent cell](https://arxiv.org/abs/1810.12546).
+
+## Equations
+
+```math
+\begin{aligned}
+    \mathbf{p}(t) &= \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih}, \\
+    \mathbf{q}(t) &= \mathbf{W}_{ih} \mathbf{h}(t-1) \mathbf{b}_{hh}, \\
+    \mathbf{i}(t) &= \sigma(\mathbf{p}(t) + \mathbf{q}(t)), \\
+    \mathbf{f}(t) &= \sigma(\mathbf{p}(t) - \mathbf{q}(t)), \\
+    \mathbf{h}(t) &= \mathbf{i}(t) \circ \mathbf{p}(t) + \mathbf{f}(t)
+        \circ \mathbf{h}(t-1).
+\end{aligned}
+```
 
 ## Arguments
 
@@ -20,18 +33,22 @@
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input to hidden bias $\mathbf{b}_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias $\mathbf{b}_{hh}$. If set
+    to `nothing`, weights are initialized from a uniform distribution within
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weights $\mathbf{W}_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
 
@@ -57,12 +74,12 @@
 
 ## Parameters
 
-  -  `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W, W_{\theta},  W_{\eta} \}``.
-  - `weight_hh`: Concatenated Weights to map from hidden space
-                 ``\{ W_{\theta}, W_{\eta} \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  - `weight_ih`: Concatenated weights to map from input to the hidden state $\mathbf{W}_{ih}$.
+  - `weight_hh`: Concatenated weights to map from hidden to the hidden state $\mathbf{W}_{hh}$.
+  - `bias_ih`: Bias vector for the input-hidden connection (not present if
+      `use_bias=false`) $\mathbf{b}_{ih}$.
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
+      `use_bias=false`) $\mathbf{b}_{hh}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States

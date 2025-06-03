@@ -12,8 +12,10 @@
 ## Equations
 
 ```math
-    h(t) = h(t-1) + \epsilon \cdot \tanh \left( (W_{hh} - W_{hh}^T - \gamma \cdot I)
-        h(t-1) + b_{hh} + W_{ih} x(t) + b_{ih} \right)
+    \mathbf{h}(t) &= \mathbf{h}(t-1) + \epsilon \cdot \tanh\left( 
+        (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
+        \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih} \mathbf{x}(t) +
+        \mathbf{b}_{ih} \right),
 ```
 
 ## Arguments
@@ -27,16 +29,16 @@
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias $b_{ih}$. If set to
+  - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_bias`: Initializer for recurrent bias $b_{hh}$. If set to
+  - `init_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_weight`: Initializer for weight $W_{ih}$. If set to
+  - `init_weight`: Initializer for weight $\mathbf{W}_{ih}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight $W_{hh}$. If set to
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
@@ -65,12 +67,12 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights to map from input to the hidden state $W_{ih}$.
-  - `weight_hh`: Concatenated weights to map from hidden to the hidden state $W_{hh}$.
+  - `weight_ih`: Concatenated weights to map from input to the hidden state $\mathbf{W}_{ih}$.
+  - `weight_hh`: Concatenated weights to map from hidden to the hidden state $\mathbf{W}_{hh}$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if
-      `use_bias=false`) $b_{ih}$.
+      `use_bias=false`) $\mathbf{b}_{ih}$.
   - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
-      `use_bias=false`) $b_{hh}$.
+      `use_bias=false`) $\mathbf{b}_{hh}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -154,10 +156,15 @@ end
 ## Equations
 
 ```math
-    z(t) &= \sigma ( (W_{hh} - W_{hh}^T - \gamma \cdot I) h(t-1)
-        + b_{hh} + W_{ih}^z x(t) + b_{ih}^z ), \\
-    h(t) &= h(t-1) + \epsilon \cdot z(t) \odot \tanh ( (W_{hh} - W_{hh}^T -
-        \gamma \cdot I) h(t-1) + b_{hh} + W_{ih}^x x(t) + b_{ih}^h ).
+    \mathbf{z}(t) &= \sigma\left( 
+        (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
+        \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih}^z \mathbf{x}(t)
+        + \mathbf{b}_{ih}^z \right), \\
+    \mathbf{h}(t) &= \mathbf{h}(t-1) + \epsilon \cdot \mathbf{z}(t) \circ
+        \tanh\left( (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot
+        \mathbf{I}) \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih}^x
+        \mathbf{x}(t) + \mathbf{b}_{ih}^h \right).
+
 ```
 
 ## Arguments
@@ -172,22 +179,22 @@ end
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input to hidden bias $b_{ih}^z, b_{ih}^h$.
+  - `init_bias`: Initializer for input to hidden bias $\mathbf{b}_{ih}^z, \mathbf{b}_{ih}^h$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into a 2-element
     tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
     distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden to hidden bias $b_{hh}$. If set to `nothing`,
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias $\mathbf{b}_{hh}$. If set to `nothing`,
     weights are initialized from a uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_weight`: Initializer for input to hidden weights $W_{ih}^z, W_{ih}^x$.
+  - `init_weight`: Initializer for input to hidden weights $\mathbf{W}_{ih}^z, \mathbf{W}_{ih}^x$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into
     a 2-element tuple (fn, fn). If set to `nothing`, weights are initialized from
     a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight $W_{hh}$. If set to
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
@@ -217,16 +224,16 @@ end
 ## Parameters
 
   - `weight_ih`: Concatenated weights to map from input to the hidden state.
-                 ``\{ W_{ih}^z, W_{ih}^h \}``
+                 ``\{ \mathbf{W}_{ih}^z, \mathbf{W}_{ih}^h \}``
     The initializers in `init_weight` are applied in the order they appear:
-    the first function is used for $W_{ih}^z$, and the second for $W_{ih}^h$.
-  - `weight_hh`: Weights to map the hidden state to the hidden state $W_{hh}$.
+    the first function is used for $\mathbf{W}_{ih}^z$, and the second for $\mathbf{W}_{ih}^h$.
+  - `weight_hh`: Weights to map the hidden state to the hidden state $\mathbf{W}_{hh}$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-                 ``\{ b_{ih}^z, b_{ih}^h \}``
+                 ``\{ \mathbf{b}_{ih}^z, \mathbf{b}_{ih}^h \}``
     The initializers in `init_bias` are applied in the order they appear:
-    the first function is used for $b_{ih}^z$, and the second for $b_{ih}^h$.
+    the first function is used for $\mathbf{b}_{ih}^z$, and the second for $\mathbf{b}_{ih}^h$.
   - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
-    $b_{hh}$
+    $\mathbf{b}_{hh}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
