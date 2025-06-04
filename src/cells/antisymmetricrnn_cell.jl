@@ -12,10 +12,12 @@
 ## Equations
 
 ```math
-    \mathbf{h}(t) &= \mathbf{h}(t-1) + \epsilon \cdot \tanh\left( 
+\begin{equation}
+    \mathbf{h}(t) = \mathbf{h}(t-1) + \epsilon \cdot \tanh\left( 
         (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
         \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih} \mathbf{x}(t) +
-        \mathbf{b}_{ih} \right),
+        \mathbf{b}_{ih} \right)
+\end{equation}
 ```
 
 ## Arguments

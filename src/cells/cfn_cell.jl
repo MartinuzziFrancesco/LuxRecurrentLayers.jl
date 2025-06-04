@@ -3,8 +3,7 @@
     CFNCell(in_dims => out_dims, [activation];
         use_bias=true, train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32,
-        epsilon=1.0, gamma=0.0)
+        init_recurrent_weight=nothing, init_state=zeros32)
 
 
 [Chaos free network unit](https://arxiv.org/abs/1612.06212).
@@ -13,9 +12,15 @@
 
 ```math
 \begin{aligned}
-    h_t &= \theta_t \odot \tanh(h_{t-1}) + \eta_t \odot \tanh(W x_t), \\
-    \theta_t &:= \sigma (U_\theta h_{t-1} + V_\theta x_t + b_\theta), \\
-    \eta_t &:= \sigma (U_\eta h_{t-1} + V_\eta x_t + b_\eta).
+    \boldsymbol{\theta}(t) &= \sigma\left(\mathbf{W}_{ih}^{\theta} \mathbf{x}(t)
+        + \mathbf{b}_{ih}^{\theta} + \mathbf{W}_{hh}^{\theta} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{\theta}\right) \\
+    \boldsymbol{\eta}(t) &= \sigma\left(\mathbf{W}_{ih}^{\eta} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{\eta} + \mathbf{W}_{hh}^{\eta} \mathbf{h}(t-1) + 
+        \mathbf{b}_{hh}^{\eta} \right) \\
+    \mathbf{h}(t) &= \boldsymbol{\theta}(t) \circ \tanh(\mathbf{h}(t-1)) +
+        \boldsymbol{\eta}(t) \circ \tanh(\mathbf{W}_{ih}^h \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{h})
 \end{aligned}
 ```
 
@@ -31,30 +36,35 @@
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
-    Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 2 functions.
-    If a single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_context_weight`: Initializer for context weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input to hidden bias
+    $\mathbf{b}_{ih}^{\theta}, \mathbf{b}_{ih}^{\eta}, \mathbf{b}_{ih}^{h}$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 3-element
+    tuple (fn, fn, fn). If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden to hidden bias
+    $\mathbf{b}_{hh}^{\theta}, \mathbf{b}_{hh}^{\eta}$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 2-element
+    tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weights
+    $\mathbf{W}_{ih}^{\theta}, \mathbf{W}_{ih}^{\eta}, \mathbf{W}_{ih}^{h}$.
+    Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 3-element tuple (fn, fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for input to hidden weights
+    $\mathbf{W}_{hh}^{\theta}, \mathbf{W}_{hh}^{\eta}$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into
+    a 2-element tuple (fn, fn). If set to `nothing`, weights are initialized from
+    a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
-  - `init_memory`: Initializer for memory. Default set to `zeros32`.
 
 ## Inputs
 
@@ -78,12 +88,26 @@
 
 ## Parameters
 
-  -  `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W, W_{\theta},  W_{\eta} \}``.
-  - `weight_hh`: Concatenated Weights to map from hidden space
-                 ``\{ W_{\theta}, W_{\eta} \}``
+  - `weight_ih`: Concatenated weights to map from input to the hidden state.
+                 ``\{ \mathbf{W}_{ih}^{\theta}, \mathbf{W}_{ih}^{\eta}, \mathbf{W}_{ih}^{h} \}``
+    The initializers in `init_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{W}_{ih}^{\theta}$, the second for
+    $\mathbf{W}_{ih}^{\eta}$, and the third for $\mathbf{W}_{ih}^h$.
+  - `weight_hh`: Concatenated weights to map from hidden to hidden state.
+                 ``\{ \mathbf{W}_{hh}^{\theta}, \mathbf{W}_{hh}^{\eta} \}``
+    The initializers in `init_recurrent_weight` are applied in the order they appear:
+    the first function is used for $\mathbf{W}_{hh}^{\theta}$, and the second for
+    $\mathbf{W}_{hh}^{\eta}$.
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{ih}^{\theta}, \mathbf{b}_{ih}^{\eta}, \mathbf{b}_{ih}^{h} \}``
+    The initializers in `init_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{ih}^{\theta}$, the second for
+      $\mathbf{b}_{ih}^{\eta}$, and the third for $\mathbf{b}_{ih}^{h}$.
+  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+                 ``\{ \mathbf{b}_{hh}^{\theta}, \mathbf{b}_{hh}^{\eta} \}``
+    The initializers in `init_recurrent_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{hh}^{\theta}$, and the second for
+      $\mathbf{b}_{hh}^{\eta}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States

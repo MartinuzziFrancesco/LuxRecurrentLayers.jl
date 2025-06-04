@@ -85,7 +85,7 @@
 
 ## Parameters
 
-    - `weight_ih`: Concatenated weights to map from input to the hidden state
+  - `weight_ih`: Concatenated weights to map from input to the hidden state
                  ``\{ \mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h \}``
     The initializers in `init_weight` are applied in the order they appear:
     the first function is used for $\mathbf{W}_{ih}^a$, the second for $\mathbf{W}_{ih}^c$,
