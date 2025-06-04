@@ -1,11 +1,11 @@
 #https://arxiv.org/abs/2010.00951
 @doc raw"""
-    coRNNCell(in_dims => out_dims, [dt];
+    coRNNCell(in_dims => out_dims;
         use_bias=true, train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_cell_weight=nothing, init_state=zeros32, init_memory=zeros32)
-        gamma=0.0, epsilon=0.0)
+        gamma=0.0, epsilon=0.0, dt=1.0)
 
 [Coupled oscillatory recurrent neural unit](https://arxiv.org/abs/2010.00951).
 
@@ -27,7 +27,7 @@
 
 - `in_dims`: Input Dimension
 - `out_dims`: Output (Hidden State & Memory) Dimension
-- `dt`: time step. Default is 1.0.
+
 
 ## Keyword Arguments
 
@@ -62,6 +62,9 @@
     Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
+  - `dt`: time step. Default is 1.0.
+  - `gamma`: Damping for state. Default is 0.0.
+  - `epsilon`: Damping for candidate state. Default is 0.0.
 
 ## Inputs
 
@@ -118,8 +121,11 @@
     in_dims <: IntegerType
     out_dims <: IntegerType
     init_bias
+    init_recurrent_bias
+    init_cell_bias
     init_weight
     init_recurrent_weight
+    init_cell_weight
     init_state
     use_bias <: StaticBool
     dt
@@ -129,10 +135,12 @@ end
 
 function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
-        dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
+        init_state=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_weight, init_recurrent_weight, init_state, static(use_bias),
+        init_bias, init_recurrent_bias, init_cell_bias, init_weight,
+        init_recurrent_weight, init_cell_weight, init_state, static(use_bias),
         dt, gamma, epsilon)
 end
 
@@ -141,14 +149,14 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
         rng, cornn.init_weight, cornn.out_dims, (cornn.out_dims, cornn.in_dims))
     weight_hh = init_rnn_weight(
         rng, cornn.init_recurrent_weight, cornn.out_dims, (cornn.out_dims, cornn.out_dims))
-    weight_zh = init_rnn_weight(
-        rng, cornn.init_recurrent_weight, cornn.out_dims, (cornn.out_dims, cornn.out_dims))
-    ps = (; weight_ih, weight_hh, weight_zh)
+    weight_ch = init_rnn_weight(
+        rng, cornn.init_cell_weight, cornn.out_dims, (cornn.out_dims, cornn.out_dims))
+    ps = (; weight_ih, weight_hh, weight_ch)
     if has_bias(cornn)
         bias_ih = init_rnn_bias(rng, cornn.init_bias, cornn.out_dims, cornn.out_dims)
-        bias_hh = init_rnn_bias(rng, cornn.init_bias, cornn.out_dims, cornn.out_dims)
-        bias_zh = init_rnn_bias(rng, cornn.init_bias, cornn.out_dims, cornn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh, bias_zh))
+        bias_hh = init_rnn_bias(rng, cornn.init_recurrent_bias, cornn.out_dims, cornn.out_dims)
+        bias_ch = init_rnn_bias(rng, cornn.init_cell_bias, cornn.out_dims, cornn.out_dims)
+        ps = merge(ps, (; bias_ih, bias_hh, bias_ch))
     end
     has_train_state(cornn) &&
         (ps = merge(ps, (hidden_state=cornn.init_state(rng, cornn.out_dims),)))
@@ -172,11 +180,11 @@ function (cornn::coRNNCell)(
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    bias_zh = safe_getproperty(ps, Val(:bias_zh))
+    bias_ch = safe_getproperty(ps, Val(:bias_ch))
     #computation
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    zs = fused_dense_bias_activation(identity, ps.weight_zh, matched_cstate, bias_zh)
+    zs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)
     pre_act = @. xs + hs + zs
     new_cstate = @. c_state + dt * (tanh_fast(pre_act) - gamma * state - epsilon * c_state)
     new_state = @. state + dt * new_cstate
