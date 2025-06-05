@@ -154,7 +154,8 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
     ps = (; weight_ih, weight_hh, weight_ch)
     if has_bias(cornn)
         bias_ih = init_rnn_bias(rng, cornn.init_bias, cornn.out_dims, cornn.out_dims)
-        bias_hh = init_rnn_bias(rng, cornn.init_recurrent_bias, cornn.out_dims, cornn.out_dims)
+        bias_hh = init_rnn_bias(
+            rng, cornn.init_recurrent_bias, cornn.out_dims, cornn.out_dims)
         bias_ch = init_rnn_bias(rng, cornn.init_cell_bias, cornn.out_dims, cornn.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh, bias_ch))
     end

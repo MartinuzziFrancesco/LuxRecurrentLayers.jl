@@ -13,10 +13,10 @@
 
 ```math
 \begin{equation}
-    \mathbf{h}(t) = \mathbf{h}(t-1) + \epsilon \cdot \tanh\left( 
+    \mathbf{h}(t) = \mathbf{h}(t-1) + \epsilon \cdot \tanh\left(
+        \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
         (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
-        \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih} \mathbf{x}(t) +
-        \mathbf{b}_{ih} \right)
+        \mathbf{h}(t-1) + \mathbf{b}_{hh} \right)
 \end{equation}
 ```
 
@@ -158,6 +158,7 @@ end
 ## Equations
 
 ```math
+\begin{aligned}
     \mathbf{z}(t) &= \sigma\left( 
         (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
         \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih}^z \mathbf{x}(t)
@@ -166,7 +167,7 @@ end
         \tanh\left( (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot
         \mathbf{I}) \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih}^x
         \mathbf{x}(t) + \mathbf{b}_{ih}^h \right).
-
+\end{aligned}
 ```
 
 ## Arguments

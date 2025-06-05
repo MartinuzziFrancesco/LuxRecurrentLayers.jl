@@ -12,11 +12,11 @@
 ```math
 \begin{aligned}
     \mathbf{a}(t) &= 1 + \tanh\left(\mathbf{W}_{ih}^{a} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^a + \mathbf{w}_{hh}^{a} \circ \mathbf{h}(t-1)\right) +
-        \mathbf{b}_{hh}^a\\
+        \mathbf{b}_{ih}^a + \mathbf{w}_{hh}^{a} \circ \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^a \right) \\
     \mathbf{c}(t) &= \sigma\left(\mathbf{W}_{ih}^{c} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^c + \mathbf{w}_{hh}^{c} \circ \mathbf{h}(t-1)\right) +
-        \mathbf{b}_{hh}^c\\
+        \mathbf{b}_{ih}^c + \mathbf{w}_{hh}^{c} \circ \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^c \right)\\
     \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
         \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
         \mathbf{a}(t) \circ \mathbf{h}(t-1)\right)
@@ -202,11 +202,11 @@ end
 ```math
 \begin{aligned}
     \mathbf{a}(t) &= 1 + \tanh\left(\mathbf{W}_{ih}^{a} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^a + \mathbf{W}_{hh}^{a} \circ \mathbf{h}(t-1)\right) +
-        \mathbf{b}_{hh}^a\\
+        \mathbf{b}_{ih}^a + \mathbf{W}_{hh}^{a} \circ \mathbf{h}(t-1)+
+        \mathbf{b}_{hh}^a \right) \\
     \mathbf{c}(t) &= \sigma\left(\mathbf{W}_{ih}^{c} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^c + \mathbf{W}_{hh}^{c} \circ \mathbf{h}(t-1)\right) +
-        \mathbf{b}_{hh}^c\\
+        \mathbf{b}_{ih}^c + \mathbf{W}_{hh}^{c} \circ \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^c \right)\\
     \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
         \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
         \mathbf{a}(t) \circ \mathbf{h}(t-1)\right) 

@@ -12,7 +12,7 @@
 ```math
 \begin{aligned}
     \mathbf{p}(t) &= \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih}, \\
-    \mathbf{q}(t) &= \mathbf{W}_{ih} \mathbf{h}(t-1) \mathbf{b}_{hh}, \\
+    \mathbf{q}(t) &= \mathbf{W}_{ih} \mathbf{h}(t-1) + \mathbf{b}_{hh}, \\
     \mathbf{i}(t) &= \sigma(\mathbf{p}(t) + \mathbf{q}(t)), \\
     \mathbf{f}(t) &= \sigma(\mathbf{p}(t) - \mathbf{q}(t)), \\
     \mathbf{h}(t) &= \mathbf{i}(t) \circ \mathbf{p}(t) + \mathbf{f}(t)
