@@ -8,6 +8,18 @@
 
 [Fast recurrent neural network cell](https://arxiv.org/abs/1901.02358).
 
+# Equations
+
+```math
+\begin{aligned}
+    \tilde{\mathbf{h}}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) +
+        \mathbf{b}_{ih} + \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh}
+        \right), \\
+    \mathbf{h}(t) &= \alpha \, \tilde{\mathbf{h}}(t) + \beta \,
+        \mathbf{h}(t-1)
+\end{aligned}
+```
+
 # Arguments
 
   - `in_dims`: Input dimension
@@ -37,18 +49,6 @@
     Default is -3.0.
   - `init_beta`: initializer for the $\beta$ learnable parameter.
     Default is 3.0.
-
-# Equations
-
-```math
-\begin{aligned}
-    \tilde{\mathbf{h}}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) +
-        \mathbf{b}_{ih} + \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh}
-        \right), \\
-    \mathbf{h}(t) &= \alpha \, \tilde{\mathbf{h}}(t) + \beta \,
-        \mathbf{h}(t-1)
-\end{aligned}
-```
 
 ## Inputs
 
@@ -159,6 +159,22 @@ end
 
 [Fast gated recurrent neural network cell](https://arxiv.org/abs/1901.02358).
 
+# Equations
+
+```math
+\begin{aligned}
+    \mathbf{z}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{z} + \mathbf{W}_{hh} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{z} \right), \\
+    \tilde{\mathbf{h}}(t) &= \tanh\left( \mathbf{W}_{ih} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{h} + \mathbf{W}_{hh} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{h} \right), \\
+    \mathbf{h}(t) &= \left( \left( \zeta (1 - \mathbf{z}(t)) + \nu \right)
+        \circ \tilde{\mathbf{h}}(t) \right) + \mathbf{z}(t) \circ
+        \mathbf{h}(t-1)
+\end{aligned}
+```
+
 # Arguments
 
   - `in_dims`: Input dimension
@@ -195,21 +211,6 @@ end
     Default is 1.0.
   - `init_nu`: initializer for the $\nu$ learnable parameter.
     Default is 4.0.
-
-# Equations
-```math
-\begin{aligned}
-    \mathbf{z}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^{z} + \mathbf{W}_{hh} \mathbf{h}(t-1) +
-        \mathbf{b}_{hh}^{z} \right), \\
-    \tilde{\mathbf{h}}(t) &= \tanh\left( \mathbf{W}_{ih} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^{h} + \mathbf{W}_{hh} \mathbf{h}(t-1) +
-        \mathbf{b}_{hh}^{h} \right), \\
-    \mathbf{h}(t) &= \left( \left( \zeta (1 - \mathbf{z}(t)) + \nu \right)
-        \circ \tilde{\mathbf{h}}(t) \right) + \mathbf{z}(t) \circ
-        \mathbf{h}(t-1)
-\end{aligned}
-```
 
 ## Inputs
 
