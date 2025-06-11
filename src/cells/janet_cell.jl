@@ -10,10 +10,14 @@
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{s}_t &= \mathbf{U}_f \mathbf{h}_{t-1} + \mathbf{W}_f \mathbf{x}_t + \mathbf{b}_f \\
-    \tilde{\mathbf{c}}_t &= \tanh (\mathbf{U}_c \mathbf{h}_{t-1} + \mathbf{W}_c \mathbf{x}_t + \mathbf{b}_c) \\
-    \mathbf{c}_t &= \sigma(\mathbf{s}_t) \odot \mathbf{c}_{t-1} + (1 - \sigma (\mathbf{s}_t - \beta)) \odot \tilde{\mathbf{c}}_t \\
-    \mathbf{h}_t &= \mathbf{c}_t.
+    \mathbf{s}(t) &= \mathbf{W}_{ih}^{f} \mathbf{x}(t) + \mathbf{b}_{ih}^{f} +
+        \mathbf{W}_{hh}^{f} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{f}, \\
+    \tilde{\mathbf{c}}(t) &= \tanh\left( \mathbf{W}_{ih}^{c} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{c} + \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{c} \right), \\
+    \mathbf{c}(t) &= \sigma(\mathbf{s}(t)) \circ \mathbf{c}(t-1) + \left(1 -
+        \sigma(\mathbf{s}(t) - \beta)\right) \circ \tilde{\mathbf{c}}(t), \\
+    \mathbf{h}(t) &= \mathbf{c}(t)
 \end{aligned}
 ```
 
@@ -25,26 +29,35 @@
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
-    Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
-    Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `train_state`: Flag to set the initial hidden state as trainable. Default set to `false`.
+  - `train_memory`: Flag to set the initial memory state as trainable. Default set to `false`.
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{f}$ and $\mathbf{b}_{ih}^{c}$.
+    Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
+    If a single function `fn` is provided, it is expanded to `(fn, fn)`.
+    If set to `nothing`, each bias is initialized from a uniform distribution 
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\mathbf{b}_{hh}^{f}$ and $\mathbf{b}_{hh}^{c}$.
+    Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
+    If a single function `fn` is provided, it is expanded to `(fn, fn)`.
+    If set to `nothing`, each bias is initialized from a uniform distribution 
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{f}$ and $\mathbf{W}_{ih}^{c}$.
+    Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
+    If a single function `fn` is provided, it is expanded to `(fn, fn)`.
+    If set to `nothing`, each weight is initialized from a uniform distribution 
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{hh}^{f}$ and $\mathbf{W}_{hh}^{c}$.
+    Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
+    If a single function `fn` is provided, it is expanded to `(fn, fn)`.
+    If set to `nothing`, each weight is initialized from a uniform distribution 
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
-  - `beta`: Control parameter over the input data flow.
-    Default is 1.0.
+  - `beta`: Control parameter over the input data flow. Default is `1.0`.
 
 ## Inputs
 
@@ -77,13 +90,26 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W_{if}, W_{ic} \}``.
-  - `weight_hh`: Concatenated Weights to map from hidden space
-                 ``\{ W_{hf}, W_{hc} \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`)
+  - `weight_ih`: Concatenated weights mapping from input to hidden units  
+    ``\{ \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{c} \}``  
+    The functions provided in `init_weight` are applied in order:  
+    the first function initializes $\mathbf{W}_{ih}^{f}$, the second
+    initializes $\mathbf{W}_{ih}^{c}$.
+  - `weight_hh`: Concatenated weights mapping from hidden state to hidden units  
+    ``\{ \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{c} \}``  
+    The functions provided in `init_recurrent_weight` are applied in order:  
+    the first function initializes $\mathbf{W}_{hh}^{f}$, the second
+    initializes $\mathbf{W}_{hh}^{c}$.
+  - `bias_ih`: Concatenated input-to-hidden bias vectors (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{c} \}``  
+    The functions provided in `init_bias` are applied in order:  
+    the first function initializes $\mathbf{b}_{ih}^{f}$, the second
+    initializes $\mathbf{b}_{ih}^{c}$.
+  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{c} \}``  
+    The functions provided in `init_recurrent_bias` are applied in order:  
+    the first function initializes $\mathbf{b}_{hh}^{f}$, the second initializes
+    $\mathbf{b}_{hh}^{c}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 

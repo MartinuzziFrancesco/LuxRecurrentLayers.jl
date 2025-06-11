@@ -1,8 +1,10 @@
 #https://arxiv.org/abs/1711.06788
 @doc raw"""
     MinimalRNNCell(in_dims => out_dims;
-        use_bias=true, train_state=false, init_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing,
+        use_bias=true, train_state=false,
+        init_encoder_bias=nothing, init_recurrent_bias=nothing,
+        init_memory_bias=nothing, init_encoder_weight=nothing,
+        init_recurrent_weight=nothing, init_memory_weight=nothing,
         init_state=zeros32,)
 
 [Minimal recurrent neural network unit](https://arxiv.org/abs/1711.06788).
@@ -11,12 +13,12 @@
 
 ```math
 \begin{aligned}
-    \mathbf{z}_t &= \Phi(\mathbf{x}_t) = \tanh(\mathbf{W}_x \mathbf{x}_t +
-        \mathbf{b}_z), \\
-    \mathbf{u}_t &= \sigma(\mathbf{U}_h \mathbf{h}_{t-1} + \mathbf{U}_z \mathbf{z}_t +
-        \mathbf{b}_u), \\
-    \mathbf{h}_t &= \mathbf{u}_t \circ \mathbf{h}_{t-1} + (1 - \mathbf{u}_t) \circ
-        \mathbf{z}_t.
+    \mathbf{z}(t) &= \tanh\left( \mathbf{W}_{ih}^{z} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{z} \right), \\
+    \mathbf{u}(t) &= \sigma\left( \mathbf{W}_{hh}^{u} \mathbf{h}(t-1) +
+        \mathbf{W}_{zh}^{u} \mathbf{z}(t) + \mathbf{b}_{hh}^{u} \right), \\
+    \mathbf{h}(t) &= \mathbf{u}(t) \circ \mathbf{h}(t-1) + \left(1 -
+        \mathbf{u}(t)\right) \circ \mathbf{z}(t)
 \end{aligned}
 ```
 
@@ -30,18 +32,24 @@
   - `use_bias`: Set to false to deactivate bias
   - `train_state`: Trainable initial hidden state can be activated by setting this to `true`
   - `train_memory`: Trainable initial memory can be activated by setting this to `true`
-  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`.
+  - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}^{u}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+  - `init_memory_bias`: Initializer for memory bias $\mathbf{b}_{zh}^{u}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+  - `init_encoder_weight`: Initializer for encoder weight $\mathbf{W}_{ih}^{z}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}^{u}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+  - `init_memory_weight`: Initializer for memory weight $\mathbf{W}_{zh}^{u}``.  
+    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+    `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
   - `init_state`: Initializer for hidden state
   - `init_memory`: Initializer for memory
 
@@ -76,14 +84,18 @@
 
 ## Parameters
 
-  - `weight_ih`: Weights to map from input space.
-  - `weight_hh`: Weights to map from hidden space.
-  - `weight_mm`: Weights to map from memory space.
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`).
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`).
-  - `bias_hh`: Bias vector for the mnemrory-memory connection (not present if
-    `use_bias=false`).
+  - `weight_ih`: Encoder weight $\mathbf{W}_{ih}^{z}$ — maps input $\mathbf{x}(t)$ to the encoder representation $\mathbf{z}(t)$.  
+    Initialized via `init_encoder_weight`.
+  - `weight_hh`: Recurrent weight $\mathbf{W}_{hh}^{u}$ — maps previous hidden state $\mathbf{h}(t-1)$ to the update gate $\mathbf{u}(t)`.  
+    Initialized via `init_recurrent_weight`.
+  - `weight_mm`: Memory weight $\mathbf{W}_{zh}^{u}$ — maps encoder output $\mathbf{z}(t)$ into the update gate $\mathbf{u}(t)`.  
+    Initialized via `init_memory_weight`.
+  - `bias_ih`: Encoder bias $\mathbf{b}_{ih}^{z}`` (not present if `use_bias=false`).  
+    Initialized via `init_encoder_bias`.
+  - `bias_hh`: Recurrent bias $\mathbf{b}_{hh}^{u}`` (not present if `use_bias=false`).  
+    Initialized via `init_recurrent_bias`.
+  - `bias_mm`: Memory bias $\mathbf{b}_{zh}^{u}`` (not present if `use_bias=false`).  
+    Initialized via `init_memory_bias`.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`).
   - `memory`: Initial memory vector (not present if `train_memory=false`).
 
@@ -97,9 +109,10 @@
     train_memory::TM
     in_dims <: IntegerType
     out_dims <: IntegerType
-    init_bias
     init_encoder_bias
-    init_weight
+    init_recurrent_bias
+    init_memory_bias
+    init_encoder_weight
     init_recurrent_weight
     init_memory_weight
     init_state
@@ -110,16 +123,17 @@ end
 function MinimalRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
         use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_encoder_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_memory_weight=nothing, init_state=zeros32,
-        init_memory=zeros32)
+        init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
+        init_encoder_weight=nothing, init_recurrent_weight=nothing,
+        init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
     return MinimalRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_encoder_bias, init_weight, init_recurrent_weight,
-        init_memory_weight, init_state, init_memory, static(use_bias))
+        init_encoder_bias, init_recurrent_bias, init_memory_bias, init_encoder_weight,
+        init_recurrent_weight, init_memory_weight, init_state, init_memory,
+        static(use_bias))
 end
 
 function initialparameters(rng::AbstractRNG, minimal::MinimalRNNCell)
-    weight_ih = init_rnn_weight(rng, minimal.init_weight, minimal.out_dims,
+    weight_ih = init_rnn_weight(rng, minimal.init_encoder_weight, minimal.out_dims,
         (minimal.out_dims, minimal.in_dims))
     weight_hh = init_rnn_weight(rng, minimal.init_recurrent_weight, minimal.out_dims,
         (minimal.out_dims, minimal.out_dims))
@@ -129,8 +143,8 @@ function initialparameters(rng::AbstractRNG, minimal::MinimalRNNCell)
     if has_bias(minimal)
         bias_ih = init_rnn_bias(
             rng, minimal.init_encoder_bias, minimal.out_dims, minimal.out_dims)
-        bias_hh = init_rnn_bias(rng, minimal.init_bias, minimal.out_dims, minimal.out_dims)
-        bias_mm = init_rnn_bias(rng, minimal.init_bias, minimal.out_dims, minimal.out_dims)
+        bias_hh = init_rnn_bias(rng, minimal.init_recurrent_bias, minimal.out_dims, minimal.out_dims)
+        bias_mm = init_rnn_bias(rng, minimal.init_memory_bias, minimal.out_dims, minimal.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh, bias_mm))
     end
     has_train_state(minimal) &&

@@ -9,8 +9,10 @@
 
 ## Equations
 ```math
-\mathbf{h}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
-    \mathbf{w}_{hh} \circ \mathbf{h}(t-1) + \mathbf{b}_{hh} \right)
+\begin{equation}
+    \mathbf{h}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
+        \mathbf{w}_{hh} \circ \mathbf{h}(t-1) + \mathbf{b}_{hh} \right)
+\end{equation}
 ```
 
 ## Arguments

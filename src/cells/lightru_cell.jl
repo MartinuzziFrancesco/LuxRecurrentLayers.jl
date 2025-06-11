@@ -10,9 +10,13 @@
 ## Equations
 ```math
 \begin{aligned}
-    \tilde{h}_t &= \tanh(W_h x_t), \\
-    f_t         &= \delta(W_f x_t + U_f h_{t-1} + b_f), \\
-    h_t         &= (1 - f_t) \odot h_{t-1} + f_t \odot \tilde{h}_t.
+    \tilde{\mathbf{h}}(t) &= \tanh\left( \mathbf{W}_{ih}^{h} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{h} \right), \\
+    \mathbf{f}(t) &= \delta\left( \mathbf{W}_{ih}^{f} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{f} + \mathbf{W}_{hh}^{f} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{f} \right), \\
+    \mathbf{h}(t) &= (1 - \mathbf{f}(t)) \circ \mathbf{h}(t-1) + \mathbf{f}(t)
+        \circ \tilde{\mathbf{h}}(t).
 \end{aligned}
 ```
 
@@ -26,18 +30,27 @@
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input-to-hidden biases  
+    $\{ \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{f} \}$.  
+    Must be a tuple of 2 functions. If a single function is passed, it is
+    expanded to 2 copies. If set to `nothing`, each bias is initialized from a
+    uniform distribution within `[-bound, bound]` where
+    `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias  
+    $\{ \mathbf{b}_{hh}^{f} \}$. Must be a single function. If set to `nothing`,
+    initialized from a uniform distribution within `[-bound, bound]` where
+    `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights  
+    $\{ \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{f} \}$. Must be a tuple of 2
+    functions. If a single function is passed, it is expanded to 2 copies.
+    If set to `nothing`, weights are initialized from a uniform distribution
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight  
+    $\{ \mathbf{W}_{hh}^{f} \}$.  
+    Must be a single function. If set to `nothing`, initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
 
 ## Inputs
@@ -62,12 +75,23 @@
 
 ## Parameters
 
-  -  `weight_ih`: Weights to map from input space
-                 ``\{W \}``.
-  - `weight_hh`: Weights to map from hidden space
-                 ``\{ w_h \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  - `weight_ih`: Input-to-hidden weights  
+    ``\{ \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{f} \}``  
+    The functions from `init_weight` are applied in order:  
+    the first initializes $\mathbf{W}_{ih}^{h}$, the second $\mathbf{W}_{ih}^{f}$.
+
+  - `weight_hh`: Hidden-to-hidden weight  
+    ``\{ \mathbf{W}_{hh}^{f} \}``  
+    Initialized via `init_recurrent_weight`.
+
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{f} \}``  
+    The functions from `init_bias` are applied in order:  
+    the first initializes $\mathbf{b}_{ih}^{h}$, the second $\mathbf{b}_{ih}^{f}$.
+
+  - `bias_hh`: Hidden-to-hidden bias (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{hh}^{f} \}``  
+    Initialized via `init_recurrent_bias`.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
