@@ -5,7 +5,7 @@
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     
-[Light recurrent unit](https://www.mdpi.com/2079-9292/13/16/3204).
+Light recurrent unit.
 
 ## Equations
 ```math
@@ -31,23 +31,23 @@
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases  
-    $\{ \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{f} \}$.  
+    $\mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{f}$.  
     Must be a tuple of 2 functions. If a single function is passed, it is
     expanded to 2 copies. If set to `nothing`, each bias is initialized from a
     uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden-to-hidden bias  
-    $\{ \mathbf{b}_{hh}^{f} \}$. Must be a single function. If set to `nothing`,
+    $\mathbf{b}_{hh}^{f}$. Must be a single function. If set to `nothing`,
     initialized from a uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input-to-hidden weights  
-    $\{ \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{f} \}$. Must be a tuple of 2
+    $\mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{f}$. Must be a tuple of 2
     functions. If a single function is passed, it is expanded to 2 copies.
     If set to `nothing`, weights are initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_recurrent_weight`: Initializer for hidden-to-hidden weight  
-    $\{ \mathbf{W}_{hh}^{f} \}$.  
+    $\mathbf{W}_{hh}^{f}$.  
     Must be a single function. If set to `nothing`, initialized from a uniform
     distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.

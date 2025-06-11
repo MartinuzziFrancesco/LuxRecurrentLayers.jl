@@ -42,13 +42,13 @@
   - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
-    $\{ \mathbf{b}_{ih}^{1}, \mathbf{b}_{ih}^{2}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{h} \}$.
+    $\mathbf{b}_{ih}^{1}, \mathbf{b}_{ih}^{2}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{h}$.
     Must be a tuple of 4 functions, e.g., `(glorot_uniform, kaiming_uniform, lecun_normal, zeros)`.
     If a single function is passed, it is expanded to a 4-element tuple.
     If set to `nothing`, biases are initialized from a uniform distribution within
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
-    $\{ \mathbf{b}_{hh}^{1}, \mathbf{b}_{hh}^{2}, \mathbf{b}_{hh}^{c}, \mathbf{b}_{hh}^{h} \}$.
+    $\mathbf{b}_{hh}^{1}, \mathbf{b}_{hh}^{2}, \mathbf{b}_{hh}^{c}, \mathbf{b}_{hh}^{h}$.
     Must be a tuple of 3 functions.
     If a single function is passed, it is expanded to a 3-element tuple.
     If set to `nothing`, biases are initialized from a uniform distribution within
@@ -57,13 +57,13 @@
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input-to-hidden weights
-    $\{ \mathbf{W}_{ih}^{1}, \mathbf{W}_{ih}^{2}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{h} \}$.
+    $\mathbf{W}_{ih}^{1}, \mathbf{W}_{ih}^{2}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{h}$.
     Must be a tuple of 4 functions.
     If a single function is passed, it is expanded to a 4-element tuple.
     If set to `nothing`, weights are initialized from a uniform distribution within
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
-    $\{ \mathbf{W}_{hh}^{1}, \mathbf{W}_{hh}^{2}, \mathbf{W}_{hh}^{c}, \mathbf{W}_{hh}^{h} \}$.
+    $\mathbf{W}_{hh}^{1}, \mathbf{W}_{hh}^{2}, \mathbf{W}_{hh}^{c}, \mathbf{W}_{hh}^{h}$.
     Must be a tuple of 3 functions.
     If a single function is passed, it is expanded to a 3-element tuple.
     If set to `nothing`, weights are initialized from a uniform distribution within

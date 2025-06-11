@@ -32,22 +32,22 @@
   - `use_bias`: Set to false to deactivate bias
   - `train_state`: Trainable initial hidden state can be activated by setting this to `true`
   - `train_memory`: Trainable initial memory can be activated by setting this to `true`
-  - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}``.  
+  - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}^{u}``.  
+  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}^{u}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in  
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_memory_bias`: Initializer for memory bias $\mathbf{b}_{zh}^{u}``.  
+  - `init_memory_bias`: Initializer for memory bias $\mathbf{b}_{zh}^{u}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in  
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_encoder_weight`: Initializer for encoder weight $\mathbf{W}_{ih}^{z}``.  
+  - `init_encoder_weight`: Initializer for encoder weight $\mathbf{W}_{ih}^{z}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in  
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}^{u}``.  
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}^{u}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in  
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_memory_weight`: Initializer for memory weight $\mathbf{W}_{zh}^{u}``.  
+  - `init_memory_weight`: Initializer for memory weight $\mathbf{W}_{zh}^{u}$.  
     Must be a single function. If `nothing`, initialized from a uniform distribution in  
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
   - `init_state`: Initializer for hidden state
@@ -86,15 +86,15 @@
 
   - `weight_ih`: Encoder weight $\mathbf{W}_{ih}^{z}$ — maps input $\mathbf{x}(t)$ to the encoder representation $\mathbf{z}(t)$.  
     Initialized via `init_encoder_weight`.
-  - `weight_hh`: Recurrent weight $\mathbf{W}_{hh}^{u}$ — maps previous hidden state $\mathbf{h}(t-1)$ to the update gate $\mathbf{u}(t)`.  
+  - `weight_hh`: Recurrent weight $\mathbf{W}_{hh}^{u}$ — maps previous hidden state $\mathbf{h}(t-1)$ to the update gate $\mathbf{u}(t)$.  
     Initialized via `init_recurrent_weight`.
-  - `weight_mm`: Memory weight $\mathbf{W}_{zh}^{u}$ — maps encoder output $\mathbf{z}(t)$ into the update gate $\mathbf{u}(t)`.  
+  - `weight_mm`: Memory weight $\mathbf{W}_{zh}^{u}$ — maps encoder output $\mathbf{z}(t)$ into the update gate $\mathbf{u}(t)$.  
     Initialized via `init_memory_weight`.
-  - `bias_ih`: Encoder bias $\mathbf{b}_{ih}^{z}`` (not present if `use_bias=false`).  
+  - `bias_ih`: Encoder bias $\mathbf{b}_{ih}^{z}$ (not present if `use_bias=false`).  
     Initialized via `init_encoder_bias`.
-  - `bias_hh`: Recurrent bias $\mathbf{b}_{hh}^{u}`` (not present if `use_bias=false`).  
+  - `bias_hh`: Recurrent bias $\mathbf{b}_{hh}^{u}$ (not present if `use_bias=false`).  
     Initialized via `init_recurrent_bias`.
-  - `bias_mm`: Memory bias $\mathbf{b}_{zh}^{u}`` (not present if `use_bias=false`).  
+  - `bias_mm`: Memory bias $\mathbf{b}_{zh}^{u}$ (not present if `use_bias=false`).  
     Initialized via `init_memory_bias`.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`).
   - `memory`: Initial memory vector (not present if `train_memory=false`).

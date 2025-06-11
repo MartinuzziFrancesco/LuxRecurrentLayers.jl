@@ -34,25 +34,25 @@
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases  
-    $\{ \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{h} \}$.  
+    $\mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{h}$.  
     Must be a tuple of 2 functions. If a single function is provided, it is
     expanded to 2 copies. If set to `nothing`, biases are initialized from a
     uniform distribution in `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
-    $\{ \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{h} \}``.  
+    $\mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{h}$.  
     Must be a tuple of 2 functions. If a single function is provided,
     it is expanded to 2 copies. If set to `nothing`, biases are initialized
     from a uniform distribution in `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input-to-hidden weights  
-    $\{ \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{h} \}$.  
+    $\mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{h}$.  
     Must be a tuple of 2 functions. If a single function is provided, it is
     expanded to 2 copies. If set to `nothing`, weights are initialized from a
     uniform distribution in `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\{ \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{h} \}$.  
+    $\mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{h}$.  
     Must be a tuple of 2 functions. If a single function is provided, it is
     expanded to 2 copies. If set to `nothing`, weights are initialized from a
     uniform distribution in `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
