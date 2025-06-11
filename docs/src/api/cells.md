@@ -1,35 +1,37 @@
 # Cells
 
-```@docs
-    AntisymmetricRNNCell
-    ATRCell
-    BRCell
-    CFNCell
-    coRNNCell
-    FastGRNNCell
-    FastRNNCell
-    GatedAntisymmetricRNNCell
-    IndRNNCell
-    JANETCell
-    LEMCell
-    LightRUCell
-    LiGRUCell
-    MGUCell
-    MinimalRNNCell
-    MultiplicativeLSTMCell
-    MUT1Cell
-    MUT2Cell
-    MUT3Cell
-    NASCell
-    NBRCell
-    PeepholeLSTMCell
-    RANCell
-    SCRNCell
-    SGRNCell
-    STARCell
-    TGRUCell
-    TLSTMCell
-    TRNNCell
-    UnICORNNCell
-    WMCLSTMCell
-```
+This module provides several recurrent layers.
+In this page you can access their API documentation
+from this list:
+
+- [AntisymmetricRNNCell](cells/antisymmetricrnncell.md)
+- [ATRCell](cells/atrcell.md)
+- [BRCell](cells/brcell.md)
+- [CFNCell](cells/cfncell.md)
+- [coRNNCell](cells/cornncell.md)
+- [FastGRNNCell](cells/fastgrnncell.md)
+- [FastRNNCell](cells/fastrnncell.md)
+- [GatedAntisymmetricRNNCell](cells/gatedantisymmetricrnncell.md)
+- [IndRNNCell](cells/indrnncell.md)
+- [JANETCell](cells/janetcell.md)
+- [LEMCell](cells/lemcell.md)
+- [LightRUCell](cells/lightrucell.md)
+- [LiGRUCell](cells/ligrucell.md)
+- [MGUCell](cells/mgucell.md)
+- [MinimalRNNCell](cells/minimalrnncell.md)
+- [MultiplicativeLSTMCell](cells/multiplicativelstmcell.md)
+- [MUT1Cell](cells/mut1cell.md)
+- [MUT2Cell](cells/mut2cell.md)
+- [MUT3Cell](cells/mut3cell.md)
+- [NASCell](cells/nascell.md)
+- [NBRCell](cells/nbrcell.md)
+- [PeepholeLSTMCell](cells/peepholelstmcell.md)
+- [RANCell](cells/rancell.md)
+- [SCRNCell](cells/scrncell.md)
+- [SGRNCell](cells/sgrncell.md)
+- [STARCell](cells/starcell.md)
+- [TGRUCell](cells/tgrucell.md)
+- [TLSTMCell](cells/tlstmcell.md)
+- [TRNNCell](cells/trnncell.md)
+- [UnICORNNCell](cells/unicornncell.md)
+- [WMCLSTMCell](cells/wmclstmcell.md)

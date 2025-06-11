@@ -4,7 +4,7 @@
         use_bias=true, train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
-        init_cell_weight=nothing, init_state=zeros32, init_memory=zeros32)
+        init_cell_weight=nothing, init_state=zeros32, init_memory=zeros32,
         gamma=0.0, epsilon=0.0, dt=1.0)
 
 [Coupled oscillatory recurrent neural unit](https://arxiv.org/abs/2010.00951).
