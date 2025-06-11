@@ -9,8 +9,8 @@
 
 ## Equations
 ```math
-\mathbf{h}_{t} = \sigma(\mathbf{W} \mathbf{x}_t + \mathbf{u} \odot \mathbf{h}_{t-1} +
-    \mathbf{b})
+\mathbf{h}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
+    \mathbf{w}_{hh} \circ \mathbf{h}(t-1) + \mathbf{b}_{hh} \right)
 ```
 
 ## Arguments
@@ -24,18 +24,19 @@
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for bias $\mathbf{b}_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_weight`: Initializer for input to hidden weight $\mathbf{W}_{ih}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden to hidden weight
+    $\mathbf{w}_{hh}$. If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
 
 ## Inputs
@@ -60,12 +61,12 @@
 
 ## Parameters
 
-  -  `weight_ih`: Weights to map from input space
-                 ``\{W \}``.
-  - `weight_hh`: Weights to map from hidden space
-                 ``\{ w_h \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  -  `weight_ih`: Weights to map from input space $\mathbf{W}_{ih}$.
+  - `weight_hh`: Weights to map from hidden space $\mathbf{W}_{hh}$.
+  - `bias_ih`: Bias vector for the input-hidden connection $\mathbf{b}_{ih}$
+    (not present if `use_bias=false`)
+  - `bias_hh`: Bias vector for the hidden-hidden connection $\mathbf{b}_{hh}$
+    (not present if `use_bias=false`)
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
