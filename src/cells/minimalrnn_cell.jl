@@ -84,20 +84,22 @@
 
 ## Parameters
 
-  - `weight_ih`: Encoder weight $\mathbf{W}_{ih}^{z}$ — maps input $\mathbf{x}(t)$ to the encoder representation $\mathbf{z}(t)$.  
-    Initialized via `init_encoder_weight`.
-  - `weight_hh`: Recurrent weight $\mathbf{W}_{hh}^{u}$ — maps previous hidden state $\mathbf{h}(t-1)$ to the update gate $\mathbf{u}(t)$.  
-    Initialized via `init_recurrent_weight`.
-  - `weight_mm`: Memory weight $\mathbf{W}_{zh}^{u}$ — maps encoder output $\mathbf{z}(t)$ into the update gate $\mathbf{u}(t)$.  
-    Initialized via `init_memory_weight`.
-  - `bias_ih`: Encoder bias $\mathbf{b}_{ih}^{z}$ (not present if `use_bias=false`).  
-    Initialized via `init_encoder_bias`.
-  - `bias_hh`: Recurrent bias $\mathbf{b}_{hh}^{u}$ (not present if `use_bias=false`).  
-    Initialized via `init_recurrent_bias`.
-  - `bias_mm`: Memory bias $\mathbf{b}_{zh}^{u}$ (not present if `use_bias=false`).  
-    Initialized via `init_memory_bias`.
-  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`).
-  - `memory`: Initial memory vector (not present if `train_memory=false`).
+  - `weight_ih`: Encoder weights  
+    ``\{ \mathbf{W}_{ih}^{z} \}``  
+  - `weight_hh`: Recurrent weights  
+    ``\{ \mathbf{W}_{hh}^{u} \}``  
+  - `weight_mm`: Memory weights  
+    ``\{ \mathbf{W}_{zh}^{u} \}``  
+  - `bias_ih`: Encoder bias (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ih}^{z} \}``  
+  - `bias_hh`: Recurrent bias (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{hh}^{u} \}``  
+  - `bias_mm`: Memory bias (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{zh}^{u} \}``  
+  - `hidden_state`: Initial hidden state vector $\mathbf{h}(0)$  
+    (not present if `train_state=false`).
+  - `memory`: Initial memory vector $\mathbf{c}(0)$  
+    (not present if `train_memory=false`).
 
 ## States
 
