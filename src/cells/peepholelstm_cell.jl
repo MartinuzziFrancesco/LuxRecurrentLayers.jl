@@ -11,12 +11,28 @@
 ## Equations
 ```math
 \begin{aligned}
-    z_t &= \tanh(W_z x_t + U_z h_{t-1} + b_z), \\
-    i_t &= \sigma(W_i x_t + U_i h_{t-1} + p_i \odot c_{t-1} + b_i), \\
-    f_t &= \sigma(W_f x_t + U_f h_{t-1} + p_f \odot c_{t-1} + b_f), \\
-    c_t &= f_t \odot c_{t-1} + i_t \odot z_t, \\
-    o_t &= \sigma(W_o x_t + U_o h_{t-1} + p_o \odot c_t + b_o), \\
-    h_t &= o_t \odot \tanh(c_t).
+    \mathbf{z}(t) &= \tanh\left(
+        \mathbf{W}_{ih}^{z} \mathbf{x}(t) + \mathbf{b}_{ih}^{z} +
+        \mathbf{W}_{hh}^{z} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{z}
+        \right), \\
+    \mathbf{i}(t) &= \sigma\left(
+        \mathbf{W}_{ih}^{i} \mathbf{x}(t) + \mathbf{b}_{ih}^{i} +
+        \mathbf{W}_{hh}^{i} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{i} +
+        \mathbf{p}^{i} \circ \mathbf{c}(t-1) + \mathbf{b}_{ph}^{i}
+        \right), \\
+    \mathbf{f}(t) &= \sigma\left(
+        \mathbf{W}_{ih}^{f} \mathbf{x}(t) + \mathbf{b}_{ih}^{f} +
+        \mathbf{W}_{hh}^{f} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{f} +
+        \mathbf{p}^{f} \circ \mathbf{c}(t-1) + \mathbf{b}_{ph}^{f}
+        \right), \\
+    \mathbf{c}(t) &= \mathbf{f}(t) \circ \mathbf{c}(t-1) + \mathbf{i}(t) \circ
+        \mathbf{z}(t), \\
+    \mathbf{o}(t) &= \sigma\left(
+        \mathbf{W}_{ih}^{o} \mathbf{x}(t) + \mathbf{b}_{ih}^{o} +
+        \mathbf{W}_{hh}^{o} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{o} +
+        \mathbf{p}^{o} \circ \mathbf{c}(t) + \mathbf{b}_{ph}^{o}
+        \right), \\
+    \mathbf{h}(t) &= \mathbf{o}(t) \circ \tanh\left( \mathbf{c}(t) \right)
 \end{aligned}
 ```
 
@@ -28,34 +44,63 @@
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
+  - `train_state`: Flag to set the initial hidden state as trainable.  
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
+  - `train_memory`: Flag to set the initial memory state as trainable.  
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_peephole_bias`: Initializer for peephole bias. Must be a tuple containing 3 functions. If a single
-    value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 3 functions. If a
-    single value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_peephole_weight`: Initializer for peephole weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input-to-hidden biases  
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    The functions are applied in order: the first initializes $\mathbf{b}_{ih}^{z}$,
+    the second $\mathbf{b}_{ih}^{i}$, the third $\mathbf{b}_{ih}^{f}$,
+    and the fourth $\mathbf{b}_{ih}^{o}$. Default set to `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
+    $\mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`, where
+    `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
+    the first initializes $\mathbf{b}_{hh}^{z}$, the second $\mathbf{b}_{hh}^{i}$,  
+    the third $\mathbf{b}_{hh}^{f}$, and the fourth $\mathbf{b}_{hh}^{o}$.  
+    Default set to `nothing`.
+  - `init_peephole_bias`: Initializer for peephole biases  
+    $\mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`, 
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
+    the first initializes $\mathbf{b}_{ph}^{i}$, the second $\mathbf{b}_{ph}^{f}$,  
+    and the third $\mathbf{b}_{ph}^{o}$.  
+    Default set to `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights  
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
+    the first initializes $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{i}$,  
+    the third $\mathbf{W}_{ih}^{f}$, and the fourth $\mathbf{W}_{ih}^{o}$.  
+    Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
+    $\mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized 
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
+    the first initializes $\mathbf{W}_{hh}^{z}$, the second $\mathbf{W}_{hh}^{i}$,  
+    the third $\mathbf{W}_{hh}^{f}$, and the fourth $\mathbf{W}_{hh}^{o}$.  
+    Default set to `nothing`.
+  - `init_peephole_weight`: Initializer for peephole weights  
+    $\mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
+    the first initializes $\mathbf{p}^{i}$, the second $\mathbf{p}^{f}$,  
+    and the third $\mathbf{p}^{o}$.  
+    Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
 
@@ -90,18 +135,19 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W_{if}, W_{ic}, W_{ii}, W_{io} \}``.
-  - `weight_hh`: Concatenated weights to map from hidden space
-                 ``\{ W_{hf}, W_{hc}, W_{hi}, W_{ho} \}``
-  - `weight_ph`: Concatenated weights to map from peephole space
-                 ``\{ W_{ff}, W_{fc}, W_{fi} \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`)
-  - `bias_ph`: Concatenated Bias vector for the peephole-hidden connection (not present if
-    `use_bias=false`)
-  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
+  - `weight_ih`: Input-to-hidden weights  
+    ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o} \}``  
+  - `weight_hh`: Hidden-to-hidden weights  
+    ``\{ \mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o} \}``  
+  - `weight_ph`: Peephole weights  
+    ``\{ \mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o} \}``  
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``  
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o} \}``  
+  - `bias_ph`: Peephole biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o} \}``  
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)  
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
 ## States

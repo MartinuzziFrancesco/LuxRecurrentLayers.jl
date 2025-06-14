@@ -11,29 +11,40 @@
 ## Equations
 ```math
 \begin{aligned}
-\text{First Layer Outputs:} & \\
-o_1 &= \sigma(W_i^{(1)} x_t + W_h^{(1)} h_{t-1} + b^{(1)}), \\
-o_2 &= \text{ReLU}(W_i^{(2)} x_t + W_h^{(2)} h_{t-1} + b^{(2)}), \\
-o_3 &= \sigma(W_i^{(3)} x_t + W_h^{(3)} h_{t-1} + b^{(3)}), \\
-o_4 &= \text{ReLU}(W_i^{(4)} x_t \cdot W_h^{(4)} h_{t-1}), \\
-o_5 &= \tanh(W_i^{(5)} x_t + W_h^{(5)} h_{t-1} + b^{(5)}), \\
-o_6 &= \sigma(W_i^{(6)} x_t + W_h^{(6)} h_{t-1} + b^{(6)}), \\
-o_7 &= \tanh(W_i^{(7)} x_t + W_h^{(7)} h_{t-1} + b^{(7)}), \\
-o_8 &= \sigma(W_i^{(8)} x_t + W_h^{(8)} h_{t-1} + b^{(8)}). \\
-
-\text{Second Layer Computations:} & \\
-l_1 &= \tanh(o_1 \cdot o_2) \\
-l_2 &= \tanh(o_3 + o_4) \\
-l_3 &= \tanh(o_5 \cdot o_6) \\
-l_4 &= \sigma(o_7 + o_8) \\
-
-\text{Inject Cell State:} & \\
-l_1 &= \tanh(l_1 + c_{\text{state}}) \\
-
-\text{Final Layer Computations:} & \\
-c_{\text{new}} &= l_1 \cdot l_2 \\
-l_5 &= \tanh(l_3 + l_4) \\
-h_{\text{new}} &= \tanh(c_{\text{new}} \cdot l_5)
+    \mathbf{o}_1(t) &= \sigma\left( \mathbf{W}_{ih}^{(1)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(1)} + \mathbf{W}_{hh}^{(1)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(1)} \right), \\
+    \mathbf{o}_2(t) &= \text{ReLU}\left( \mathbf{W}_{ih}^{(2)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(2)} + \mathbf{W}_{hh}^{(2)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(2)} \right), \\
+    \mathbf{o}_3(t) &= \sigma\left( \mathbf{W}_{ih}^{(3)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(3)} + \mathbf{W}_{hh}^{(3)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(3)} \right), \\
+    \mathbf{o}_4(t) &= \text{ReLU}\left( \left( \mathbf{W}_{ih}^{(4)}
+        \mathbf{x}(t) + \mathbf{b}_{ih}^{(4)} \right) \circ \left(
+        \mathbf{W}_{hh}^{(4)} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{(4)} \right)
+        \right), \\
+    \mathbf{o}_5(t) &= \tanh\left( \mathbf{W}_{ih}^{(5)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(5)} + \mathbf{W}_{hh}^{(5)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(5)} \right), \\
+    \mathbf{o}_6(t) &= \sigma\left( \mathbf{W}_{ih}^{(6)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(6)} + \mathbf{W}_{hh}^{(6)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(6)} \right), \\
+    \mathbf{o}_7(t) &= \tanh\left( \mathbf{W}_{ih}^{(7)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(7)} + \mathbf{W}_{hh}^{(7)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(7)} \right), \\
+    \mathbf{o}_8(t) &= \sigma\left( \mathbf{W}_{ih}^{(8)} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{(8)} + \mathbf{W}_{hh}^{(8)} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{(8)} \right), \\
+    \mathbf{l}_1(t) &= \tanh\left( \mathbf{o}_1(t) \circ \mathbf{o}_2(t)
+        \right), \\
+    \mathbf{l}_2(t) &= \tanh\left( \mathbf{o}_3(t) + \mathbf{o}_4(t) \right), \\
+    \mathbf{l}_3(t) &= \tanh\left( \mathbf{o}_5(t) \circ \mathbf{o}_6(t) \right), \\
+    \mathbf{l}_4(t) &= \sigma\left( \mathbf{o}_7(t) + \mathbf{o}_8(t) \right), \\
+    \mathbf{l}_1(t) &= \tanh\left( \mathbf{l}_1(t) + \mathbf{c}(t-1) \right), \\
+    \mathbf{c}(t) &= \mathbf{l}_1(t) \circ \mathbf{l}_2(t), \\
+    \mathbf{l}_5(t) &= \tanh\left( \mathbf{l}_3(t) + \mathbf{l}_4(t) \right), \\
+    \mathbf{h}(t) &= \tanh\left( \mathbf{c}(t) \circ \mathbf{l}_5(t) \right)
 \end{aligned}
 ```
 
@@ -45,26 +56,42 @@ h_{\text{new}} &= \tanh(c_{\text{new}} \cdot l_5)
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
+  - `train_state`: Flag to set the initial hidden state as trainable.  
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
+  - `train_memory`: Flag to set the initial memory state as trainable.  
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 3 functions. If a
-    single value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input-to-hidden biases  
+    $\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}$.  
+    Must be a tuple containing 8 functions. If a single value is passed, it is
+    copied into an 8-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`, where
+    `bound = inv(sqrt(out_dims))`. The functions are applied in order to
+    initialize $\mathbf{b}_{ih}^{(1)}$ through $\mathbf{b}_{ih}^{(8)}$.
+    Default set to `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
+    $\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}$.  
+    Must be a tuple containing 8 functions. If a single value is passed, it is
+    copied into an 8-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
+    initialize $\mathbf{b}_{hh}^{(1)}$ through $\mathbf{b}_{hh}^{(8)}$.
+    Default set to `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights  
+    $\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}$.  
+    Must be a tuple containing 8 functions. If a single value is passed, it is
+    copied into an 8-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
+    initialize $\mathbf{W}_{ih}^{(1)}$ through $\mathbf{W}_{ih}^{(8)}$.
+    Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
+    $\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}$.  
+    Must be a tuple containing 8 functions. If a single value is passed, it is
+    copied into an 8-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
+    initialize $\mathbf{W}_{hh}^{(1)}$ through $\mathbf{W}_{hh}^{(8)}$.
+    Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
 
@@ -99,14 +126,15 @@ h_{\text{new}} &= \tanh(c_{\text{new}} \cdot l_5)
 
 ## Parameters
 
-  - `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W_{if}, W_{ic}, W_{ii}, W_{io} \}``.
-  - `weight_hh`: Concatenated weights to map from hidden space
-                 ``\{ W_{hf}, W_{hc}, W_{hi}, W_{ho} \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`)
-  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
+  - `weight_ih`: Input-to-hidden weights  
+    ``\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}``  
+  - `weight_hh`: Hidden-to-hidden weights  
+    ``\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}``  
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}``  
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
+    ``\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}``  
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)  
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
 ## States
