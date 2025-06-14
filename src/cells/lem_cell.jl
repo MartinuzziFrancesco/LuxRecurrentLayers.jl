@@ -165,7 +165,8 @@ function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
     init_bias isa NTuple{4} || (init_bias = ntuple(Returns(init_bias), 4))
-    init_recurrent_bias isa NTuple{3} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
+    init_recurrent_bias isa NTuple{3} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return LEMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight, init_recurrent_weight,
         init_cell_weight, init_state, init_memory, static(use_bias), dt)
@@ -177,7 +178,8 @@ function initialparameters(rng::AbstractRNG, lem::LEMCell)
         rng, lem.init_weight, lem.out_dims, (lem.out_dims, lem.in_dims))
     weight_hh = multi_inits(
         rng, lem.init_recurrent_weight, lem.out_dims, (lem.out_dims, lem.out_dims))
-    weight_ch = init_rnn_weight(rng, lem.init_cell_weight, lem.out_dims, (lem.out_dims, lem.out_dims))
+    weight_ch = init_rnn_weight(
+        rng, lem.init_cell_weight, lem.out_dims, (lem.out_dims, lem.out_dims))
     ps = (; weight_ih, weight_hh, weight_ch)
     # biases
     if has_bias(lem)
