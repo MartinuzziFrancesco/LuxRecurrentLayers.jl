@@ -1,7 +1,8 @@
 #https://doi.org/10.1049/gtd2.12056
 @doc raw"""
     SGRNCell(in_dims => out_dims;
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, train_state=false,
+        init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     
@@ -10,11 +11,13 @@
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{f}_t &= \sigma(\mathbf{W} \mathbf{x}_t + \mathbf{U} \mathbf{h}_{t-1} +
-        \mathbf{b}), \\
-    \mathbf{i}_t &= 1 - \mathbf{f}_t, \\
-    \mathbf{h}_t &= \tanh\left(\mathbf{i}_t \circ (\mathbf{W} \mathbf{x}_t) +
-        \mathbf{f}_t \circ \mathbf{h}_{t-1}\right).
+    \mathbf{f}(t) &= \sigma\left(
+        \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
+        \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh} \right), \\
+    \mathbf{i}(t) &= 1 - \mathbf{f}(t), \\
+    \mathbf{h}(t) &= \tanh\left(
+        \mathbf{i}(t) \circ \left( \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} \right) +
+        \mathbf{f}(t) \circ \mathbf{h}(t-1) \right)
 \end{aligned}
 ```
 
@@ -26,21 +29,35 @@
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
+  - `train_state`: Flag to set the initial hidden state as trainable.  
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 2 functions. If a single
-    value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 2 functions. If a
-    single value is passed, it is copied into a 2 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input-to-hidden bias  
+    $\mathbf{b}_{ih}$.  
+    Must be a single function. If set to `nothing`, bias is initialized  
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias  
+    $\mathbf{b}_{hh}$.  
+    Must be a single function. If set to `nothing`, bias is initialized  
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weight  
+    $\mathbf{W}_{ih}$.  
+    Must be a single function. If set to `nothing`, weight is initialized  
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight  
+    $\mathbf{W}_{hh}$.  
+    Must be a single function. If set to `nothing`, weight is initialized  
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+
+
 
 ## Inputs
 
@@ -64,12 +81,14 @@
 
 ## Parameters
 
-  -  `weight_ih`: Weights to map from input space
-                 ``\{W \}``.
-  - `weight_hh`: Weights to map from hidden space
-                 ``\{ w_h \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  - `weight_ih`: Input-to-hidden weight  
+    ``\{ \mathbf{W} \}``
+  - `weight_hh`: Hidden-to-hidden weight  
+    ``\{ \mathbf{U} \}``
+  - `bias_ih`: Input-to-hidden bias (not present if `use_bias=false`)  
+    ``\{ \mathbf{b} \}``
+  - `bias_hh`: Hidden-to-hidden bias (not present if `use_bias=false`)  
+    ``\{ \mathbf{b}_{hh} \}``
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States

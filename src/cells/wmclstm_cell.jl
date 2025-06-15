@@ -13,18 +13,24 @@ connections](https://arxiv.org/abs/2109.00020).
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{i}_t &= \sigma\left(\mathbf{W}_{ix} \mathbf{x}_t + \mathbf{W}_{ih}
-        \mathbf{h}_{t-1} + \tanh(\mathbf{W}_{ic} \mathbf{c}_{t-1}) +
-        \mathbf{b}_i\right), \\
-    \mathbf{f}_t &= \sigma\left(\mathbf{W}_{fx} \mathbf{x}_t + \mathbf{W}_{fh}
-        \mathbf{h}_{t-1} + \tanh(\mathbf{W}_{fc} \mathbf{c}_{t-1}) +
-        \mathbf{b}_f\right), \\
-    \mathbf{o}_t &= \sigma\left(\mathbf{W}_{ox} \mathbf{x}_t + \mathbf{W}_{oh}
-        \mathbf{h}_{t-1} + \tanh(\mathbf{W}_{oc} \mathbf{c}_t) + \mathbf{b}_o\right), \\
-    \mathbf{c}_t &= \mathbf{f}_t \circ \mathbf{c}_{t-1} + \mathbf{i}_t \circ
-        \sigma_c(\mathbf{W}_{c} \mathbf{x}_t + \mathbf{b}_c), \\
-    \mathbf{h}_t &= \mathbf{o}_t \circ \sigma_h(\mathbf{c}_t).
+    \mathbf{i}(t) &= \sigma\left( \mathbf{W}_{ih}^{i} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{i} + \mathbf{W}_{hh}^{i} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{i} + \mathbf{W}_{mh}^{i} \mathbf{c}(t-1) +
+        \mathbf{b}_{mh}^{i} \right), \\
+    \mathbf{f}(t) &= \sigma\left( \mathbf{W}_{ih}^{f} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{f} + \mathbf{W}_{hh}^{f} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{f} + \mathbf{W}_{mh}^{f} \mathbf{c}(t-1) +
+        \mathbf{b}_{mh}^{f} \right), \\
+    \mathbf{c}(t) &= \mathbf{f}(t) \circ \mathbf{c}(t-1) + \mathbf{i}(t) \circ
+        \sigma_c\left( \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c}
+        \right), \\
+    \mathbf{o}(t) &= \sigma\left( \mathbf{W}_{ih}^{o} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{o} + \mathbf{W}_{hh}^{o} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{o} + \mathbf{W}_{mh}^{o} \mathbf{c}(t) +
+        \mathbf{b}_{mh}^{o} \right), \\
+    \mathbf{h}(t) &= \mathbf{o}(t) \circ \sigma_h\left( \mathbf{c}(t) \right)
 \end{aligned}
+
 ```
 
 ## Arguments
@@ -35,34 +41,70 @@ connections](https://arxiv.org/abs/2109.00020).
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
+  - `train_state`: Flag to set the initial hidden state as trainable.  
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
+  - `train_memory`: Flag to set the initial memory state as trainable.  
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_memory_bias`: Initializer for memory bias. Must be a tuple containing 3 functions. If a single
-    value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 3 functions. If a
-    single value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_memory_weight`: Initializer for memory weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input-to-hidden biases  
+    $\mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, biases are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{b}_{ih}^{i}$, the second $\mathbf{b}_{ih}^{f}$,  
+    the third $\mathbf{b}_{ih}^{c}$, the fourth $\mathbf{b}_{ih}^{o}$.  
+    Default set to `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
+    $\mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, biases are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{b}_{hh}^{i}$, the second $\mathbf{b}_{hh}^{f}$,  
+    the third $\mathbf{b}_{hh}^{o}$.  
+    Default set to `nothing`.
+  - `init_memory_bias`: Initializer for memory-to-hidden biases  
+    $\mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, biases are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{b}_{mh}^{i}$, the second $\mathbf{b}_{mh}^{f}$,  
+    the third $\mathbf{b}_{mh}^{o}$.  
+    Default set to `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights  
+    $\mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{o}$.  
+    Must be a tuple containing 4 functions. If a single value is passed, it is
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{W}_{ih}^{i}$, the second $\mathbf{W}_{ih}^{f}$,  
+    the third $\mathbf{W}_{ih}^{c}$, the fourth $\mathbf{W}_{ih}^{o}$.  
+    Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
+    $\mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{W}_{hh}^{i}$, the second $\mathbf{W}_{hh}^{f}$,  
+    the third $\mathbf{W}_{hh}^{o}$.  
+    Default set to `nothing`.
+  - `init_memory_weight`: Initializer for memory-to-hidden weights  
+    $\mathbf{W}_{mh}^{i}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o}$.  
+    Must be a tuple containing 3 functions. If a single value is passed, it is
+    copied into a 3-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,  
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    The functions are applied in order:  
+    the first initializes $\mathbf{W}_{mh}^{i}$, the second $\mathbf{W}_{mh}^{f}$,  
+    the third $\mathbf{W}_{mh}^{o}$.  
+    Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
 
@@ -97,19 +139,22 @@ connections](https://arxiv.org/abs/2109.00020).
 
 ## Parameters
 
-  - `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W_{if}, W_{ic}, W_{ii}, W_{io} \}``.
-  - `weight_hh`: Concatenated weights to map from hidden space
-                 ``\{ W_{hf}, W_{hc}, W_{hi}, W_{ho} \}``
-  - `weight_ph`: Concatenated weights to map from memory space
-                 ``\{ W_{ff}, W_{fc}, W_{fi} \}``
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`)
-  - `bias_ph`: Concatenated Bias vector for the memory-hidden connection (not present if
-    `use_bias=false`)
+  - `weight_ih`: Concatenated weights to map from input space  
+    ``\{ \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{o} \}``.
+  - `weight_hh`: Concatenated weights to map from hidden space  
+    ``\{ \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{c}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{o} \}``.
+  - `weight_mh`: Concatenated weights to map from memory space  
+    ``\{ \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{c}, \mathbf{W}_{mh}^{i} \}``.
+  - `bias_ih`: Concatenated bias vector for the input-hidden connection (not present if `use_bias=false`)  
+    ``\{ \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{o} \}``.
+  - `bias_hh`: Concatenated bias vector for the hidden-hidden connection (not present if `use_bias=false`)  
+    ``\{ \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{o} \}``.
+  - `bias_mh`: Concatenated bias vector for the memory-hidden connection (not present if `use_bias=false`)  
+    ``\{ \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{o} \}``.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
+
+
 
 ## States
 

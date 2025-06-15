@@ -12,10 +12,12 @@
 ## Equations
 ```math
 \begin{aligned}
-    y_n &= y_{n-1} + \Delta t \, \hat{\sigma}(c) \odot z_n, \\
-    z_n &= z_{n-1} - \Delta t \, \hat{\sigma}(c) \odot \left[ 
-        \sigma \left( w \odot y_{n-1} + V y_{n-1} + b \right) + 
-        \alpha y_{n-1} \right].
+    \mathbf{h}(t) &= \mathbf{h}(t-1) + \Delta t \cdot \hat{\sigma}(\mathbf{w}_{ch})
+        \circ \mathbf{z}(t), \\
+    \mathbf{z}(t) &= \mathbf{z}(t-1) - \Delta t \cdot \hat{\sigma}(\mathbf{w}_{ch})
+        \circ \left[ \sigma \left( \mathbf{w}_{hh} \circ \mathbf{h}(t-1) +
+        \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} \right) + \alpha \cdot
+        \mathbf{h}(t-1) \right].
 \end{aligned}
 ```
 
@@ -27,29 +29,32 @@
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.
+  - `train_state`: Flag to set the initial hidden state as trainable.  
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.
+  - `train_memory`: Flag to set the initial memory state as trainable.  
     Default set to `false`.
-  - `init_bias`: Initializer for bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for recurrent bias. Must be a tuple containing 4 functions. If a single
-    value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_weight`: Initializer for weight. Must be a tuple containing 4 functions. If a
-    single value is passed, it is copied into a 4 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for recurrent weight. Must be a tuple containing 3 functions. If a
-    single value is passed, it is copied into a 3 element tuple. If `nothing`, then we use
-    uniform distribution with bounds `-bound` and `bound` where
-    `bound = inv(sqrt(out_dims))`. Default set to `nothing`.
+  - `init_bias`: Initializer for input bias  
+    $\mathbf{b}_{ih}$.  
+    Must be a single function. If set to `nothing`, the bias is initialized from a
+    uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_weight`: Initializer for input weight  
+    $\mathbf{W}_{ih}$.  
+    Must be a single function. If set to `nothing`, the weight is initialized from
+    a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_recurrent_weight`: Initializer for recurrent weight  
+    $\mathbf{w}_{hh}$.  
+    Must be a single function. If set to `nothing`, the weight is initialized from
+    a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
+  - `init_control_weight`: Initializer for control weight  
+    $\mathbf{w}_{ch}$.  
+    Must be a single function. If set to `nothing`, the weight is initialized from
+    a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
-
 ## Inputs
 
   - Case 1a: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
@@ -81,13 +86,14 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated Weights to map from input space
-                 ``\{ W_{if}, W_{ic}, W_{ii}, W_{io} \}``.
-  - `weight_hh`: Concatenated weights to map from hidden space
-                 ``\{ W_{hf}, W_{hc}, W_{hi}, W_{ho} \}```
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
-  - `bias_hh`: Concatenated Bias vector for the hidden-hidden connection (not present if
-    `use_bias=false`)
+  - `weight_ih`: Input-to-hidden weight  
+    ``\{ \mathbf{W}_{ih} \}``
+  - `weight_hh`: Elementwise recurrent weight  
+    ``\{ \mathbf{w}_{hh} \}``
+  - `weight_ch`: Elementwise control weight  
+    ``\{ \mathbf{w}_{ch} \}``
+  - `bias_ih`: Input-to-hidden bias (not present if `use_bias=false`)  
+    ``\{ \mathbf{b}_{ih} \}``
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
