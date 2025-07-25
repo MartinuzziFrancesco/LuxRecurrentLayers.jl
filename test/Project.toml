@@ -1,6 +1,13 @@
 [deps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+LuxCUDA = "d0bbae9a-e099-4d5b-a835-1c6931763bda"
 LuxTestUtils = "ac9de150-d08f-4546-94fb-7472b5760531"
+MLDataDevices = "7e8f7934-dd98-4c1a-8fe8-92b47a384d40"
 ReTestItems = "817f1d60-ba6b-4fd5-9520-3cf149f6a823"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
