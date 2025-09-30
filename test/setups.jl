@@ -96,9 +96,8 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:WMCLSTMCell,
         (; kwargs...) -> WMCLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state])
 ]
-
 
 function loss_loop(cell, x, p, st)
     (y, carry), st_ = cell(x, p, st)
@@ -127,7 +126,7 @@ import Reexport: @reexport
 @reexport using LuxTestUtils, Lux
 
 using MLDataDevices, LuxCUDA, StableRNGs,
-    LinearAlgebra, JET
+      LinearAlgebra, JET
 
 if !@isdefined(BACKEND_GROUP)
     const BACKEND_GROUP = lowercase(get(ENV, "BACKEND_GROUP", "all"))
@@ -186,16 +185,15 @@ function maybe_rewrite_to_crosscor(mode, model)
     return fmap(maybe_rewrite_to_crosscor, model)
 end
 
-
 export BACKEND_GROUP,
-    MODES,
-    cpu_testing,
-    cuda_testing,
-    amdgpu_testing,
-    get_default_rng,
-    StableRNG,
-    maybe_rewrite_to_crosscor,
-    check_approx,
-    allow_unstable
+       MODES,
+       cpu_testing,
+       cuda_testing,
+       amdgpu_testing,
+       get_default_rng,
+       StableRNG,
+       maybe_rewrite_to_crosscor,
+       check_approx,
+       allow_unstable
 
 end

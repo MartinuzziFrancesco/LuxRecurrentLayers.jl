@@ -118,7 +118,7 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = init_rnn_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
-        bias_hh = init_rnn_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh))
     end
     has_train_state(rnn) &&

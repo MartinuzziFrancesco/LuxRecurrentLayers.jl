@@ -1,21 +1,18 @@
-@testitem "Cells" setup = [SharedTestSetup, RecurrentLayersSetup] tags = [
+@testitem "Cells" setup=[SharedTestSetup, RecurrentLayersSetup] tags=[
     :recurrent_layers
 ] begin
     rng = StableRNG(12345)
 
     for (mode, A, dev, on_gpu) in MODES
         @testset "$mode" begin
-
             for (name, build_cell, knobs) in RECURRENT_CELLS
                 @testset "Cell: $name" begin
-
                     for opts in Iterators.product(((true, false) for _ in knobs)...)
                         kw = Dict(knobs .=> opts)
                         cell = build_cell(; kw...)
                         ps, st = dev(Lux.setup(rng, cell))
 
                         @testset "use_bias=$(kw[:use_bias]), train_state=$(kw[:train_state])" begin
-
                             for x_size in ((3, 2), (3,))
                                 x = A(randn(rng, Float32, x_size...))
 
@@ -29,8 +26,7 @@
                                     @test !hasproperty(ps, :hidden_state)
                                 end
 
-                                @test_gradients(
-                                    loss_loop,
+                                @test_gradients(loss_loop,
                                     cell,
                                     x,
                                     ps,
@@ -40,13 +36,10 @@
                                     #broken_backends=[AutoTracker()],
                                 )
                             end
-
                         end
                     end
-
                 end
             end
-
         end
     end
 end
