@@ -5,7 +5,7 @@
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Simple gated recurrent network](https://doi.org/10.1049/gtd2.12056).
 
 ## Equations
@@ -29,31 +29,31 @@
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden bias  
-    $\mathbf{b}_{ih}$.  
-    Must be a single function. If set to `nothing`, bias is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_bias`: Initializer for input-to-hidden bias
+    $\mathbf{b}_{ih}$.
+    Must be a single function. If set to `nothing`, bias is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias  
-    $\mathbf{b}_{hh}$.  
-    Must be a single function. If set to `nothing`, bias is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias
+    $\mathbf{b}_{hh}$.
+    Must be a single function. If set to `nothing`, bias is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weight  
-    $\mathbf{W}_{ih}$.  
-    Must be a single function. If set to `nothing`, weight is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_weight`: Initializer for input-to-hidden weight
+    $\mathbf{W}_{ih}$.
+    Must be a single function. If set to `nothing`, weight is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight  
-    $\mathbf{W}_{hh}$.  
-    Must be a single function. If set to `nothing`, weight is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight
+    $\mathbf{W}_{hh}$.
+    Must be a single function. If set to `nothing`, weight is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
 
@@ -81,13 +81,13 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weight  
+  - `weight_ih`: Input-to-hidden weight
     ``\{ \mathbf{W} \}``
-  - `weight_hh`: Hidden-to-hidden weight  
+  - `weight_hh`: Hidden-to-hidden weight
     ``\{ \mathbf{U} \}``
-  - `bias_ih`: Input-to-hidden bias (not present if `use_bias=false`)  
+  - `bias_ih`: Input-to-hidden bias (not present if `use_bias=false`)
     ``\{ \mathbf{b} \}``
-  - `bias_hh`: Hidden-to-hidden bias (not present if `use_bias=false`)  
+  - `bias_hh`: Hidden-to-hidden bias (not present if `use_bias=false`)
     ``\{ \mathbf{b}_{hh} \}``
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
@@ -96,7 +96,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct SGRNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct SGRNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -109,10 +109,10 @@
 end
 
 function SGRNCell(
-        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     return SGRNCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
@@ -125,15 +125,15 @@ function parameterlength(sgrn::SGRNCell)
 end
 
 function (sgrn::SGRNCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(sgrn, ps, st, inp, state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     #computation
-    t_ones = eltype(bias_ih)(1.0f0)
+    t_ones = one(eltype(matched_inp))
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
 

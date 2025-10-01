@@ -4,7 +4,7 @@
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
@@ -36,14 +36,14 @@
   - `init_bias`: Initializer for input to hidden bias
     $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
     Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
@@ -112,7 +112,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct BRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct BRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -124,10 +124,10 @@
     use_bias <: StaticBool
 end
 
-function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function BRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -160,15 +160,15 @@ function parameterlength(br::BRCell)
 end
 
 function (br::BRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     #computation
-    t_ones = eltype(bias_ih)(1.0)
+    t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(full_xs, Val(3))
     ws = multigate(ps.weight_hh, Val(2))
@@ -194,7 +194,7 @@ end
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Recurrently neuromodulated bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
@@ -209,7 +209,7 @@ end
         \mathbf{b}_{hh}^c \right)\\
     \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
         \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
-        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right) 
+        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right)
 \end{aligned}
 ```
 
@@ -226,14 +226,14 @@ end
   - `init_bias`: Initializer for input to hidden bias
     $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
     Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
@@ -302,7 +302,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NBRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct NBRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -314,10 +314,10 @@ end
     use_bias <: StaticBool
 end
 
-function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function NBRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -340,15 +340,15 @@ function parameterlength(nbr::NBRCell)
 end
 
 function (nbr::NBRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(nbr, ps, st, inp, state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     #computation
-    t_ones = eltype(bias_ih)(1.0)
+    t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     xs = multigate(full_xs, Val(3))

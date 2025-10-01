@@ -125,3 +125,5 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
     return ps
 end
+
+multigate(::Nothing, ::Val{N}) where {N} = ntuple(_ -> nothing, N)

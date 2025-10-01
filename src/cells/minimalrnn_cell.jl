@@ -32,23 +32,23 @@
   - `use_bias`: Set to false to deactivate bias
   - `train_state`: Trainable initial hidden state can be activated by setting this to `true`
   - `train_memory`: Trainable initial memory can be activated by setting this to `true`
-  - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}$.  
+  - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}$.
     Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}^{u}$.  
-    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}^{u}$.
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_memory_bias`: Initializer for memory bias $\mathbf{b}_{zh}^{u}$.  
-    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+  - `init_memory_bias`: Initializer for memory bias $\mathbf{b}_{zh}^{u}$.
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_encoder_weight`: Initializer for encoder weight $\mathbf{W}_{ih}^{z}$.  
-    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+  - `init_encoder_weight`: Initializer for encoder weight $\mathbf{W}_{ih}^{z}$.
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}^{u}$.  
-    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+  - `init_recurrent_weight`: Initializer for recurrent weight $\mathbf{W}_{hh}^{u}$.
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
-  - `init_memory_weight`: Initializer for memory weight $\mathbf{W}_{zh}^{u}$.  
-    Must be a single function. If `nothing`, initialized from a uniform distribution in  
+  - `init_memory_weight`: Initializer for memory weight $\mathbf{W}_{zh}^{u}$.
+    Must be a single function. If `nothing`, initialized from a uniform distribution in
     `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
   - `init_state`: Initializer for hidden state
   - `init_memory`: Initializer for memory
@@ -70,7 +70,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -84,29 +84,29 @@
 
 ## Parameters
 
-  - `weight_ih`: Encoder weights  
-    ``\{ \mathbf{W}_{ih}^{z} \}``  
-  - `weight_hh`: Recurrent weights  
-    ``\{ \mathbf{W}_{hh}^{u} \}``  
-  - `weight_mm`: Memory weights  
-    ``\{ \mathbf{W}_{zh}^{u} \}``  
-  - `bias_ih`: Encoder bias (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{z} \}``  
-  - `bias_hh`: Recurrent bias (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{u} \}``  
-  - `bias_mm`: Memory bias (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{zh}^{u} \}``  
-  - `hidden_state`: Initial hidden state vector $\mathbf{h}(0)$  
+  - `weight_ih`: Encoder weights
+    ``\{ \mathbf{W}_{ih}^{z} \}``
+  - `weight_hh`: Recurrent weights
+    ``\{ \mathbf{W}_{hh}^{u} \}``
+  - `weight_mm`: Memory weights
+    ``\{ \mathbf{W}_{zh}^{u} \}``
+  - `bias_ih`: Encoder bias (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{z} \}``
+  - `bias_hh`: Recurrent bias (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{u} \}``
+  - `bias_mm`: Memory bias (if `use_bias=true`)
+    ``\{ \mathbf{b}_{zh}^{u} \}``
+  - `hidden_state`: Initial hidden state vector $\mathbf{h}(0)$
     (not present if `train_state=false`).
-  - `memory`: Initial memory vector $\mathbf{c}(0)$  
+  - `memory`: Initial memory vector $\mathbf{c}(0)$
     (not present if `train_memory=false`).
 
 ## States
 
   - `rng`: Controls the randomness (if any) in the initial state generation
 """
-@concrete struct MinimalRNNCell{TS <: StaticBool, TM <: StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS, TM}
+@concrete struct MinimalRNNCell{TS<:StaticBool,TM<:StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS,TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -123,11 +123,11 @@
 end
 
 function MinimalRNNCell(
-        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
-        init_encoder_weight=nothing, init_recurrent_weight=nothing,
-        init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
+    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh;
+    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+    init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
+    init_encoder_weight=nothing, init_recurrent_weight=nothing,
+    init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
     return MinimalRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_encoder_bias, init_recurrent_bias, init_memory_bias, init_encoder_weight,
         init_recurrent_weight, init_memory_weight, init_state, init_memory,
@@ -168,10 +168,10 @@ end
 statelength(::MinimalRNNCell) = 1
 
 function (minimal::MinimalRNNCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp,
+        (state, c_state))::Tuple{
+        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_memory = match_eltype(
         minimal, ps, st, inp, state, c_state)
@@ -187,7 +187,7 @@ function (minimal::MinimalRNNCell)(
     new_cstate = tanh_fast.(xs)
     update_gate = @. sigmoid_fast(hs + ms)
     new_state = update_gate .* state .+
-                (eltype(ps.weight_ih)(1.0) .- update_gate) .* new_cstate
+                (one(eltype(ps.weight_ih)) .- update_gate) .* new_cstate
     return (new_state, (new_state, new_cstate)), st
 end
 
