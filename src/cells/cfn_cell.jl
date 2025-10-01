@@ -16,7 +16,7 @@
         + \mathbf{b}_{ih}^{\theta} + \mathbf{W}_{hh}^{\theta} \mathbf{h}(t-1) +
         \mathbf{b}_{hh}^{\theta}\right) \\
     \boldsymbol{\eta}(t) &= \sigma\left(\mathbf{W}_{ih}^{\eta} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^{\eta} + \mathbf{W}_{hh}^{\eta} \mathbf{h}(t-1) + 
+        \mathbf{b}_{ih}^{\eta} + \mathbf{W}_{hh}^{\eta} \mathbf{h}(t-1) +
         \mathbf{b}_{hh}^{\eta} \right) \\
     \mathbf{h}(t) &= \boldsymbol{\theta}(t) \circ \tanh(\mathbf{h}(t-1)) +
         \boldsymbol{\eta}(t) \circ \tanh(\mathbf{W}_{ih}^h \mathbf{x}(t) +
@@ -168,21 +168,16 @@ end
 function (cfn::CFNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(cfn, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(3))
     ghs = multigate(full_ghs, Val(2))
-    #computation
     horizontal_gate = @. sigmoid_fast(gxs[1] + ghs[1])
     vertical_gate = @. sigmoid_fast(gxs[2] + ghs[2])
     new_state = @. horizontal_gate * tanh_fast(state) + vertical_gate * tanh_fast(gxs[3])
-
     return (new_state, (new_state,)), st
 end
 

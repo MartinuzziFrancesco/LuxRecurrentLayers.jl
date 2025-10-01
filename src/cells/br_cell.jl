@@ -112,7 +112,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct BRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct BRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -124,10 +124,10 @@
     use_bias <: StaticBool
 end
 
-function BRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -160,25 +160,23 @@ function parameterlength(br::BRCell)
 end
 
 function (br::BRCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(full_xs, Val(3))
     ws = multigate(ps.weight_hh, Val(2))
-    bhs = multigate(bias_hh, Val(3))
-    modulation_gate = @. t_ones + tanh_fast(xs[1] + ws[1] * matched_state + bhs[1])
-    candidate_state = @. sigmoid_fast(xs[2] + ws[2] * matched_state + bhs[2])
-    new_state = @. candidate_state * matched_state +
-                   (t_ones - candidate_state) *
-                   tanh_fast(xs[3] + modulation_gate * matched_state + bhs[3])
-
+    bhs = bias_safe_multigate(bias_hh, Val(3))
+    modulation_gate = t_ones .+
+                      bias_activation(tanh_fast, xs[1] .+ ws[1] .* matched_state, bhs[1])
+    candidate_state = bias_activation(sigmoid_fast, xs[2] .+ ws[2] .* matched_state, bhs[2])
+    new_state = candidate_state .* matched_state .+
+                (t_ones .- candidate_state) .*
+                bias_activation(
+        tanh_fast, xs[3] .+ modulation_gate .* matched_state, bhs[3])
     return (new_state, (new_state,)), st
 end
 
@@ -302,7 +300,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NBRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct NBRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -314,10 +312,10 @@ end
     use_bias <: StaticBool
 end
 
-function NBRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -340,20 +338,16 @@ function parameterlength(nbr::NBRCell)
 end
 
 function (nbr::NBRCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(nbr, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     xs = multigate(full_xs, Val(3))
     hs = multigate(full_hs, Val(2))
-
     modulation_gate = @. t_ones + tanh_fast(xs[1] + hs[1])
     candidate_state = @. sigmoid_fast(xs[2] + hs[2])
     new_state = @. candidate_state * matched_state +

@@ -96,7 +96,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct SGRNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct SGRNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -109,10 +109,10 @@
 end
 
 function SGRNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     return SGRNCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
@@ -125,8 +125,8 @@ function parameterlength(sgrn::SGRNCell)
 end
 
 function (sgrn::SGRNCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(sgrn, ps, st, inp, state)
     #get bias

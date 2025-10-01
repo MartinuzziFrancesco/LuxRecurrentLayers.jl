@@ -13,10 +13,10 @@
 
 ```math
 \begin{aligned}
-    \mathbf{c}(t) &= \mathbf{c}(t-1) + \Delta t \, \sigma\left( 
-        \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} + 
-        \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh} + 
-        \mathbf{W}_{ch} \mathbf{c}(t-1) + \mathbf{b}_{ch} \right) 
+    \mathbf{c}(t) &= \mathbf{c}(t-1) + \Delta t \, \sigma\left(
+        \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} +
+        \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh} +
+        \mathbf{W}_{ch} \mathbf{c}(t-1) + \mathbf{b}_{ch} \right)
         - \Delta t \, \gamma \, \mathbf{h}(t-1) - \Delta t \, \epsilon \,
         \mathbf{c}(t), \\
     \mathbf{h}(t) &= \mathbf{h}(t-1) + \Delta t \, \mathbf{c}(t)
@@ -83,7 +83,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -174,15 +174,12 @@ function (cornn::coRNNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
-    #computation
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     zs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)

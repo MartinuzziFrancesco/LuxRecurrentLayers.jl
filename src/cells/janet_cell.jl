@@ -118,8 +118,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct JANETCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct JANETCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -134,11 +134,11 @@
     beta
 end
 
-function JANETCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-    init_recurrent_weight=nothing, init_state=zeros32,
-    init_memory=zeros32, beta::Number=1.0f0)
+function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
+        init_memory=zeros32, beta::Number=1.0f0)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -153,22 +153,18 @@ end
 initialparameters(rng::AbstractRNG, janet::JANETCell) = multi_initialparameters(rng, janet)
 
 function (janet::JANETCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         janet, ps, st, inp, state, c_state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(2))
     ghs = multigate(full_ghs, Val(2))
-    #computation
     linear_gate = gxs[1] .+ ghs[1]
     candidate_state = @. tanh_fast(gxs[2] + ghs[2])
     ones_vec = one(eltype(candidate_state))

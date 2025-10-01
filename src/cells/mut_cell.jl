@@ -102,7 +102,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct MUT1Cell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct MUT1Cell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -116,10 +116,10 @@
 end
 
 function MUT1Cell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -141,25 +141,20 @@ function parameterlength(mut::MUT1Cell)
 end
 
 function (mut::MUT1Cell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(mut, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     t_ones = one(eltype(matched_inp))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     gxs = multigate(full_gxs, Val(3))
     whs = multigate(ps.weight_hh, Val(2))
-    bhs = multigate(bias_hh, Val(2))
-
+    bhs = bias_safe_multigate(bias_hh, Val(2))
     forget_gate = sigmoid_fast.(gxs[1])
-    reset_gate = sigmoid_fast.(gxs[2] .+ whs[1] * matched_state .+ bhs[1])
-    candidate_state = tanh_fast.(
-        whs[2] * (reset_gate .* matched_state) .+ bhs[2] .+ tanh_fast(gxs[3])
-    ) #in the paper is tanh(x_t) but dimensionally it cannot work
+    reset_gate = bias_activation(sigmoid_fast, gxs[2] .+ whs[1] * matched_state, bhs[1])
+    candidate_state = bias_activation(
+        tanh_fast, whs[2] * (reset_gate .* matched_state) .+ tanh_fast(gxs[3]), bhs[2])
     new_state = candidate_state .* forget_gate .+ matched_state .* (t_ones .- forget_gate)
     return (new_state, (new_state,)), st
 end
@@ -279,7 +274,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct MUT2Cell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct MUT2Cell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -293,10 +288,10 @@ end
 end
 
 function MUT2Cell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
@@ -318,24 +313,20 @@ function parameterlength(mut::MUT2Cell)
 end
 
 function (mut::MUT2Cell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(mut, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     t_ones = one(eltype(matched_inp))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     gxs = multigate(full_gxs, Val(3))
     whs = multigate(ps.weight_hh, Val(3))
-    bhs = multigate(bias_hh, Val(3))
-
-    forget_gate = sigmoid_fast.(gxs[1] .+ whs[1] * matched_state .+ bhs[1])
-    # the dimensionlity alos does not work here like the paper describes it
-    reset_gate = sigmoid_fast.(gxs[2] .+ whs[2] * matched_state .+ bhs[2])
-    candidate_state = tanh_fast.(whs[3] * (reset_gate .* matched_state) .+ bhs[3] .+ gxs[3])
+    bhs = bias_safe_multigate(bias_hh, Val(3))
+    forget_gate = bias_activation(sigmoid_fast, gxs[1] .+ whs[1] * matched_state, bhs[1])
+    reset_gate = bias_activation(sigmoid_fast, gxs[2] .+ whs[2] * matched_state, bhs[2])
+    candidate_state = tanh_fast(
+        sigmoid_fast, whs[3] * (reset_gate .* matched_state) .+ gxs[3], bhs[3])
     new_state = candidate_state .* forget_gate .+ matched_state .* (t_ones .- forget_gate)
     return (new_state, (new_state,)), st
 end
@@ -451,7 +442,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct MUT3Cell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct MUT3Cell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -465,10 +456,10 @@ end
 end
 
 function MUT3Cell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
@@ -490,23 +481,21 @@ function parameterlength(mut::MUT3Cell)
 end
 
 function (mut::MUT3Cell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(mut, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
-    t_ones = eltype(bias_ih)(1.0f0)
+    t_ones = one(eltype(matched_inp))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     gxs = multigate(full_gxs, Val(3))
     whs = multigate(ps.weight_hh, Val(3))
-    bhs = multigate(bias_hh, Val(3))
-
-    forget_gate = sigmoid_fast.(gxs[1] .+ whs[1] * tanh_fast(matched_state) .+ bhs[1])
-    reset_gate = sigmoid_fast.(gxs[2] .+ whs[2] * matched_state .+ bhs[2])
-    candidate_state = tanh_fast.(whs[3] * (reset_gate .* matched_state) .+ gxs[3] .+ bhs[3])
+    bhs = bias_safe_multigate(bias_hh, Val(3))
+    forget_gate = bias_activation(
+        sigmoid_fast, gxs[1] .+ whs[1] * tanh_fast(matched_state), bhs[1])
+    reset_gate = bias_activation(sigmoid_fast, gxs[2] .+ whs[2] * matched_state, bhs[2])
+    candidate_state = bias_activation(
+        tanh_fast, whs[3] * (reset_gate .* matched_state) .+ gxs[3], bhs[3])
     new_state = candidate_state .* forget_gate .+ matched_state .* (t_ones .- forget_gate)
     return (new_state, (new_state,)), st
 end

@@ -105,8 +105,8 @@
 
   - `rng`: Controls the randomness (if any) in the initial state generation
 """
-@concrete struct MinimalRNNCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct MinimalRNNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -123,11 +123,11 @@
 end
 
 function MinimalRNNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh;
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
-    init_encoder_weight=nothing, init_recurrent_weight=nothing,
-    init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
+        init_encoder_weight=nothing, init_recurrent_weight=nothing,
+        init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
     return MinimalRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_encoder_bias, init_recurrent_bias, init_memory_bias, init_encoder_weight,
         init_recurrent_weight, init_memory_weight, init_state, init_memory,
@@ -168,10 +168,10 @@ end
 statelength(::MinimalRNNCell) = 1
 
 function (minimal::MinimalRNNCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_memory = match_eltype(
         minimal, ps, st, inp, state, c_state)

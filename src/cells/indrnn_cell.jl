@@ -4,7 +4,7 @@
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Independently recurrent cell](https://arxiv.org/pdf/1803.04831).
 
 ## Equations
@@ -126,14 +126,12 @@ end
 function (indrnn::IndRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(indrnn, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
-    new_state = indrnn.activation.(ps.weight_ih * inp .+ ps.bias_ih .+
-                                   ps.weight_hh .* state .+ ps.bias_hh)
+    wi = bias_activation(identity, ps.weight_ih .* matched_inp, bias_ih)
+    wh = bias_activation(identity, ps.weight_hh * matched_state, bias_hh)
+    new_state = fast_activation!!(indrnn.activation, wi .+ wh)
     return (new_state, (new_state,)), st
 end
 

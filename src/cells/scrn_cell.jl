@@ -133,8 +133,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct SCRNCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct SCRNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -150,11 +150,11 @@
     use_bias <: StaticBool
 end
 
-function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_context_bias=nothing,
-    init_weight=nothing, init_recurrent_weight=nothing,
-    init_context_weight=nothing, init_state=zeros32, init_memory=zeros32)
+function SCRNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_context_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing,
+        init_context_weight=nothing, init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -203,30 +203,27 @@ function parameterlength(scrn::SCRNCell)
 end
 
 function (scrn::SCRNCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         scrn, ps, st, inp, state, c_state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
-    #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_gcs = fused_dense_bias_activation(identity, ps.weight_ch, matched_state, bias_ch)
     gxs = multigate(full_gxs, Val(2))
     ghs = multigate(ps.weight_hh, Val(2))
-    bhs = multigate(bias_hh, Val(2))
+    bhs = bias_safe_multigate(bias_hh, Val(2))
     gcs = multigate(full_gcs, Val(2))
     t_ones = one(eltype(ps.weight_hh))
-    #computation
     new_cstate = (t_ones .- ps.alpha) .* gxs[1] .+
                  ps.alpha .* matched_cstate
-    hidden_layer = sigmoid_fast.(gxs[2] .+ ghs[1] * matched_state .+ gcs[1] .+ bhs[1])
-    new_state = tanh_fast.(ghs[2] * hidden_layer .+ gcs[2] .+ bhs[2])
+    hidden_layer = bias_activation(
+        sigmoid_fast, gxs[2] .+ ghs[1] * matched_state .+ gcs[1], bhs[1])
+    new_state = bias_activation(tanh_fast, ghs[2] * hidden_layer .+ gcs[2], bhs[2])
     return (new_state, (new_state, new_cstate)), st
 end
 

@@ -84,7 +84,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct TRNNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct TRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -96,9 +96,9 @@
 end
 
 function TRNNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), train_state::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return TRNNCell(static(train_state), in_dims, out_dims, activation,
@@ -127,8 +127,8 @@ end
 statelength(::TRNNCell) = 1
 
 function (trnn::TRNNCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(trnn, ps, st, inp, state)
     #get bias
@@ -276,8 +276,8 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct TGRUCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct TGRUCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -291,11 +291,11 @@ end
     use_bias <: StaticBool
 end
 
-function TGRUCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_recurrent_bias=nothing,
-    init_state=zeros32, init_memory=zeros32)
+function TGRUCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing,
+        init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
@@ -317,10 +317,10 @@ function parameterlength(tgru::TGRUCell)
 end
 
 function (tgru::TGRUCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         tgru, ps, st, inp, state, c_state)
@@ -481,8 +481,8 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct TLSTMCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct TLSTMCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -496,10 +496,10 @@ end
     use_bias <: StaticBool
 end
 
-function TLSTMCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
+function TLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{3} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
@@ -536,9 +536,9 @@ function parameterlength(lstm::TLSTMCell)
 end
 
 function (lstm::TLSTMCell)(
-    (inp,
-        (state, c_state, prev_inp)),
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state, prev_inp)),
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(
         lstm, ps, st, inp, state, c_state)
@@ -561,32 +561,32 @@ function (lstm::TLSTMCell)(
     return (new_state, (new_state, new_cstate, matched_inp)), st
 end
 
-function (rcell::TLSTMCell{False,False})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::TLSTMCell{False, False})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state, inp)), ps, merge(st, (; rng)))
 end
 
-function (rcell::TLSTMCell{True,False})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::TLSTMCell{True, False})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state, inp)), ps, merge(st, (; rng)))
 end
 
-function (rcell::TLSTMCell{False,True})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::TLSTMCell{False, True})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state, c_state, inp)), ps, merge(st, (; rng)))
 end
 
-function (rcell::TLSTMCell{True,True})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::TLSTMCell{True, True})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state, c_state, inp)), ps, st)

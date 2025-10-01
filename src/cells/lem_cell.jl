@@ -137,8 +137,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct LEMCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct LEMCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -155,11 +155,11 @@
     dt
 end
 
-function LEMCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
-    init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-    init_state=zeros32, init_memory=zeros32, dt=1.0)
+function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
+        init_state=zeros32, init_memory=zeros32, dt=1.0)
     init_weight isa NTuple{4} ||
         (init_weight = ntuple(Returns(init_weight), 4))
     init_recurrent_weight isa NTuple{3} ||
@@ -202,25 +202,21 @@ function parameterlength(lem::LEMCell)
 end
 
 function (lem::LEMCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
-    #type match
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         lem, ps, st, inp, state, c_state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
-    #computation
     gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(gxs, Val(4))
     ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     hs = multigate(ghs, Val(3))
     cs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)
     t_ones = one(eltype(matched_inp))
-
     msdt_bar = @. lem.dt * sigmoid_fast(xs[1] + hs[1])
     ms_dt = @. lem.dt * sigmoid_fast(xs[2] + hs[2])
     new_cstate = @. (t_ones - ms_dt) * matched_cstate + ms_dt * tanh_fast(xs[3] + hs[3])

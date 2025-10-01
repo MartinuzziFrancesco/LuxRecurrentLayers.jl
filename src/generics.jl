@@ -126,4 +126,5 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     return ps
 end
 
-multigate(::Nothing, ::Val{N}) where {N} = ntuple(_ -> nothing, N)
+bias_safe_multigate(::Nothing, ::Val{N}) where {N} = ntuple(_ -> nothing, N)
+bias_safe_multigate(bias, v::Val{N}) where {N} = multigate(bias, v)
