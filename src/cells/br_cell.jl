@@ -112,7 +112,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct BRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct BRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -124,14 +124,15 @@
     use_bias <: StaticBool
 end
 
-function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function BRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
+    init_recurrent_bias isa NTuple{3} || (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return BRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
@@ -144,7 +145,7 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(br)
         bias_ih = multi_bias(rng, br.init_bias, br.out_dims, br.out_dims)
-        bias_hh = init_rnn_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
+        bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh))
     end
     has_train_state(br) &&
@@ -160,8 +161,8 @@ function parameterlength(br::BRCell)
 end
 
 function (br::BRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -300,7 +301,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NBRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct NBRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -312,10 +313,10 @@ end
     use_bias <: StaticBool
 end
 
-function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function NBRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -338,8 +339,8 @@ function parameterlength(nbr::NBRCell)
 end
 
 function (nbr::NBRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(nbr, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

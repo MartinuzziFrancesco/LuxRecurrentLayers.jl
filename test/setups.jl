@@ -18,7 +18,7 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:coRNNCell,
         (; kwargs...) -> coRNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:FastGRNNCell,
         (; kwargs...) -> FastGRNNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -33,10 +33,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:JANETCell,
         (; kwargs...) -> JANETCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:LEMCell,
         (; kwargs...) -> LEMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:LightRUCell,
         (; kwargs...) -> LightRUCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -48,10 +48,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:MinimalRNNCell,
         (; kwargs...) -> MinimalRNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:MultiplicativeLSTMCell,
         (; kwargs...) -> MultiplicativeLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:MUT1Cell,
         (; kwargs...) -> MUT1Cell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -63,19 +63,19 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:NASCell,
         (; kwargs...) -> NASCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:NBRCell,
         (; kwargs...) -> NBRCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
     (:PeepholeLSTMCell,
         (; kwargs...) -> PeepholeLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:RANCell,
         (; kwargs...) -> RANCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:SCRNCell,
         (; kwargs...) -> SCRNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:SGRNCell,
         (; kwargs...) -> SGRNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -93,10 +93,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:UnICORNNCell,
         (; kwargs...) -> UnICORNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:WMCLSTMCell,
         (; kwargs...) -> WMCLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state])
+        [:use_bias, :train_state, :train_memory])
 ]
 
 function loss_loop(cell, x, p, st)
@@ -126,7 +126,7 @@ import Reexport: @reexport
 @reexport using LuxTestUtils, Lux
 
 using MLDataDevices, LuxCUDA, StableRNGs,
-      LinearAlgebra, JET
+    LinearAlgebra, JET
 
 if !@isdefined(BACKEND_GROUP)
     const BACKEND_GROUP = lowercase(get(ENV, "BACKEND_GROUP", "all"))
@@ -186,14 +186,14 @@ function maybe_rewrite_to_crosscor(mode, model)
 end
 
 export BACKEND_GROUP,
-       MODES,
-       cpu_testing,
-       cuda_testing,
-       amdgpu_testing,
-       get_default_rng,
-       StableRNG,
-       maybe_rewrite_to_crosscor,
-       check_approx,
-       allow_unstable
+    MODES,
+    cpu_testing,
+    cuda_testing,
+    amdgpu_testing,
+    get_default_rng,
+    StableRNG,
+    maybe_rewrite_to_crosscor,
+    check_approx,
+    allow_unstable
 
 end
