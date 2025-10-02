@@ -114,8 +114,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct coRNNCell{TS <: StaticBool, TM <: StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS, TM}
+@concrete struct coRNNCell{TS<:StaticBool,TM<:StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS,TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -127,21 +127,22 @@
     init_recurrent_weight
     init_cell_weight
     init_state
+    init_memory
     use_bias <: StaticBool
     dt
     gamma
     epsilon
 end
 
-function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-        init_state=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+    init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+    init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
+    init_state=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight,
-        init_recurrent_weight, init_cell_weight, init_state, static(use_bias),
-        dt, gamma, epsilon)
+        init_recurrent_weight, init_cell_weight, init_state, init_memory,
+        static(use_bias), dt, gamma, epsilon)
 end
 
 function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
@@ -161,6 +162,8 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
     end
     has_train_state(cornn) &&
         (ps = merge(ps, (hidden_state=cornn.init_state(rng, cornn.out_dims),)))
+    known(cornn.train_memory) &&
+        (ps = merge(ps, (memory=cornn.init_memory(rng, cornn.out_dims),)))
     return ps
 end
 
@@ -170,10 +173,10 @@ function parameterlength(cornn::coRNNCell)
 end
 
 function (cornn::coRNNCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp,
+        (state, c_state))::Tuple{
+        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
+    ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon
