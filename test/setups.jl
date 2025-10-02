@@ -82,12 +82,12 @@ const RECURRENT_CELLS = [
     (:STARCell,
         (; kwargs...) -> STARCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
-    (:TGRUCell,
-        (; kwargs...) -> TGRUCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
-    (:TLSTMCell,
-        (; kwargs...) -> TLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+    #    (:TGRUCell,
+    #        (; kwargs...) -> TGRUCell(3 => 5; kwargs...),
+    #        [:use_bias, :train_state]),
+    #    (:TLSTMCell,
+    #        (; kwargs...) -> TLSTMCell(3 => 5; kwargs...),
+    #        [:use_bias, :train_state]),
     (:TRNNCell,
         (; kwargs...) -> TRNNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -98,6 +98,10 @@ const RECURRENT_CELLS = [
         (; kwargs...) -> WMCLSTMCell(3 => 5; kwargs...),
         [:use_bias, :train_state, :train_memory])
 ]
+
+format_knobs(kw::AbstractDict) =
+    join(["$(String(k))=$(repr(v))"
+          for (k, v) in sort!(collect(kw); by=x -> String(x[1]))], ", ")
 
 function loss_loop(cell, x, p, st)
     (y, carry), st_ = cell(x, p, st)
@@ -115,7 +119,7 @@ function loss_loop_no_carry(cell, x, p, st)
     return sum(abs2, y)
 end
 
-export loss_loop, loss_loop_no_carry, RECURRENT_CELLS
+export loss_loop, loss_loop_no_carry, format_knobs, RECURRENT_CELLS
 
 end
 

@@ -138,7 +138,7 @@ function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
     use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
     init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
     init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-    init_state=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+    init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight,
         init_recurrent_weight, init_cell_weight, init_state, init_memory,

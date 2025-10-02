@@ -1,4 +1,4 @@
-@testitem "Cells" setup=[SharedTestSetup, RecurrentLayersSetup] tags=[
+@testitem "Cells" setup = [SharedTestSetup, RecurrentLayersSetup] tags = [
     :recurrent_layers
 ] begin
     rng = StableRNG(12345)
@@ -12,7 +12,14 @@
                         cell = build_cell(; kw...)
                         ps, st = dev(Lux.setup(rng, cell))
 
-                        @testset "use_bias=$(kw[:use_bias]), train_state=$(kw[:train_state])" begin
+                        # String-keyed knobs for logging / debugging
+                        cell_knobs = Dict{String,Any}(String(k) => v for (k, v) in kw)
+
+                        # IMPORTANT: wrap in a string literal with interpolation
+                        @testset "$(format_knobs(kw))" begin
+                            # Read optional knobs safely
+                            train_state = get(kw, :train_state, false)
+
                             for x_size in ((3, 2), (3,))
                                 x = A(randn(rng, Float32, x_size...))
 
@@ -20,20 +27,20 @@
                                 @jet cell(x, ps, st)
                                 @jet cell((x, carry), ps, st)
 
-                                if kw[:train_state]
+                                if train_state
                                     @test hasproperty(ps, :hidden_state)
                                 else
                                     @test !hasproperty(ps, :hidden_state)
                                 end
 
-                                @test_gradients(loss_loop,
+                                @test_gradients(
+                                    loss_loop,
                                     cell,
                                     x,
                                     ps,
                                     st;
                                     atol=1e-3,
                                     rtol=1e-3,
-                                    #broken_backends=[AutoTracker()],
                                 )
                             end
                         end
