@@ -15,7 +15,7 @@
     \tilde{\mathbf{h}}(t) &= \sigma\left( \mathbf{W}_{ih} \mathbf{x}(t) +
         \mathbf{b}_{ih} + \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh}
         \right), \\
-    \mathbf{h}(t) &= \alpha \, \tilde{\mathbf{h}}(t) + \beta \,
+    \mathbf{h}(t) &= \sigma(\alpha) \, \tilde{\mathbf{h}}(t) + \sigma(\beta) \,
         \mathbf{h}(t-1)
 \end{aligned}
 ```
@@ -114,7 +114,6 @@ end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
     ps = single_initialparameters(rng, fastrnn)
-    # any additional trainable parameters
     alpha = fastrnn.init_alpha .* ones(1)
     beta = fastrnn.init_beta .* ones(1)
     ps = merge(ps, (; alpha, beta))
@@ -129,17 +128,15 @@ end
 function (fastrnn::FastRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(fastrnn, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-
     candidate_state = @. fastrnn.activation(xs + hs)
-    new_state = @. ps.alpha * candidate_state + ps.beta * state
+    alpha = sigmoid_fast(ps.alpha)
+    beta = sigmoid_fast(ps.beta)
+    new_state = @. alpha * candidate_state + beta * state
     return (new_state, (new_state,)), st
 end
 
@@ -170,7 +167,8 @@ end
     \tilde{\mathbf{h}}(t) &= \tanh\left( \mathbf{W}_{ih} \mathbf{x}(t) +
         \mathbf{b}_{ih}^{h} + \mathbf{W}_{hh} \mathbf{h}(t-1) +
         \mathbf{b}_{hh}^{h} \right), \\
-    \mathbf{h}(t) &= \left( \left( \zeta (1 - \mathbf{z}(t)) + \nu \right)
+    \mathbf{h}(t) &= \left( \left( \sigma(\zeta) (1 - \mathbf{z}(t)) +
+        \sigma(\nu) \right)
         \circ \tilde{\mathbf{h}}(t) \right) + \mathbf{z}(t) \circ
         \mathbf{h}(t-1)
 \end{aligned}
@@ -314,23 +312,21 @@ end
 function (fastrnn::FastGRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(fastrnn, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
-    bias_ihs = multigate(bias_ih, Val(2))
+    bias_ihs = bias_safe_multigate(bias_ih, Val(2))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    bias_hhs = multigate(bias_hh, Val(2))
-    #computation
+    bias_hhs = bias_safe_multigate(bias_hh, Val(2))
     xsz = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ihs[1])
     xsh = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ihs[2])
     hsz = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[1])
     hsh = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[2])
-
     gate = @. fastrnn.activation(xsz + hsz)
     candidate_state = @. tanh_fast(xsh + hsh)
     ones_arr = ones(eltype(gate), size(gate))
-    new_state = @. (ps.zeta * (ones_arr - gate) + ps.nu) * candidate_state +
+    zeta = sigmoid_fast(ps.zeta)
+    nu = sigmoid_fast(ps.nu)
+    new_state = @. (zeta * (ones_arr - gate) + nu) * candidate_state +
                    gate * state
     return (new_state, (new_state,)), st
 end

@@ -12,19 +12,19 @@
 # Equations
 ```math
 \begin{aligned}
-    \boldsymbol{\Delta t}(t) &= \Delta t \cdot \hat{\sigma} \left( 
-        \mathbf{W}_{ih}^{1} \mathbf{x}(t) + \mathbf{b}_{ih}^{1} + 
+    \boldsymbol{\Delta t}(t) &= \Delta t \cdot \hat{\sigma} \left(
+        \mathbf{W}_{ih}^{1} \mathbf{x}(t) + \mathbf{b}_{ih}^{1} +
         \mathbf{W}_{hh}^{1} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{1} \right), \\
-    \overline{\boldsymbol{\Delta t}}(t) &= \Delta t \cdot \hat{\sigma} \left( 
-        \mathbf{W}_{ih}^{2} \mathbf{x}(t) + \mathbf{b}_{ih}^{2} + 
+    \overline{\boldsymbol{\Delta t}}(t) &= \Delta t \cdot \hat{\sigma} \left(
+        \mathbf{W}_{ih}^{2} \mathbf{x}(t) + \mathbf{b}_{ih}^{2} +
         \mathbf{W}_{hh}^{2} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{2} \right), \\
-    \mathbf{c}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{c}(t-1) + 
-        \boldsymbol{\Delta t}(t) \circ \sigma\left( 
-        \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c} + 
+    \mathbf{c}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{c}(t-1) +
+        \boldsymbol{\Delta t}(t) \circ \sigma\left(
+        \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c} +
         \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{c} \right), \\
-    \mathbf{h}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{h}(t-1) + 
-        \boldsymbol{\Delta t}(t) \circ \sigma\left( 
-        \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} + 
+    \mathbf{h}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{h}(t-1) +
+        \boldsymbol{\Delta t}(t) \circ \sigma\left(
+        \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} +
         \mathbf{W}_{ch} \mathbf{c}(t) + \mathbf{b}_{ch} \right)
 \end{aligned}
 ```
@@ -92,7 +92,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -106,25 +106,25 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights mapping from input to internal units  
-    ``\{ \mathbf{W}_{ih}^{1}, \mathbf{W}_{ih}^{2}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{h} \}``  
-    The functions provided in `init_weight` are applied in order:  
+  - `weight_ih`: Concatenated weights mapping from input to internal units
+    ``\{ \mathbf{W}_{ih}^{1}, \mathbf{W}_{ih}^{2}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{h} \}``
+    The functions provided in `init_weight` are applied in order:
     the first initializes $\mathbf{W}_{ih}^{1}$, the second $\mathbf{W}_{ih}^{2}$,
     the third $\mathbf{W}_{ih}^{c}$, and the fourth $\mathbf{W}_{ih}^{h}$.
-  - `weight_hh`: Concatenated weights mapping from hidden state to internal units  
-    ``\{ \mathbf{W}_{hh}^{1}, \mathbf{W}_{hh}^{2}, \mathbf{W}_{hh}^{c} \}``  
-    The functions provided in `init_recurrent_weight` are applied in order:  
+  - `weight_hh`: Concatenated weights mapping from hidden state to internal units
+    ``\{ \mathbf{W}_{hh}^{1}, \mathbf{W}_{hh}^{2}, \mathbf{W}_{hh}^{c} \}``
+    The functions provided in `init_recurrent_weight` are applied in order:
     the first initializes $\mathbf{W}_{hh}^{1}$, the second $\mathbf{W}_{hh}^{2}$,
     and the third $\mathbf{W}_{hh}^{c}$.
   -  `weight_ch`: Weights to map from cell space $\mathbf{W}_{ch}$.
-  - `bias_ih`: Concatenated input-to-hidden bias vectors (not present if `use_bias=false`)  
-    ``\{ \mathbf{b}_{ih}^{1}, \mathbf{b}_{ih}^{2}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{h} \}``  
-    The functions provided in `init_bias` are applied in order:  
+  - `bias_ih`: Concatenated input-to-hidden bias vectors (not present if `use_bias=false`)
+    ``\{ \mathbf{b}_{ih}^{1}, \mathbf{b}_{ih}^{2}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{h} \}``
+    The functions provided in `init_bias` are applied in order:
     the first initializes $\mathbf{b}_{ih}^{1}$, the second $\mathbf{b}_{ih}^{2}$,
     the third $\mathbf{b}_{ih}^{c}$, and the fourth $\mathbf{b}_{ih}^{h}$.
-  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (not present if `use_bias=false`)  
-    ``\{ \mathbf{b}_{hh}^{1}, \mathbf{b}_{hh}^{2}, \mathbf{b}_{hh}^{c} \}``  
-    The functions provided in `init_recurrent_bias` are applied in order:  
+  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (not present if `use_bias=false`)
+    ``\{ \mathbf{b}_{hh}^{1}, \mathbf{b}_{hh}^{2}, \mathbf{b}_{hh}^{c} \}``
+    The functions provided in `init_recurrent_bias` are applied in order:
     the first initializes $\mathbf{b}_{hh}^{1}$, the second $\mathbf{b}_{hh}^{2}$,
     and the third $\mathbf{b}_{hh}^{c}$.
   - `bias_ch`: Bias vector for the cell-hidden connection $\mathbf{b}_{ch}$
@@ -206,21 +206,17 @@ function (lem::LEMCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         lem, ps, st, inp, state, c_state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
-    #computation
     gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(gxs, Val(4))
     ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     hs = multigate(ghs, Val(3))
     cs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)
-    t_ones = eltype(bias_ih)(1.0)
-
+    t_ones = one(eltype(matched_inp))
     msdt_bar = @. lem.dt * sigmoid_fast(xs[1] + hs[1])
     ms_dt = @. lem.dt * sigmoid_fast(xs[2] + hs[2])
     new_cstate = @. (t_ones - ms_dt) * matched_cstate + ms_dt * tanh_fast(xs[3] + hs[3])

@@ -52,14 +52,14 @@ function (rcell::AbstractDoubleRecurrentCell{False, True})(inp::AbstractMatrix,
         ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
-    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
 function (rcell::AbstractDoubleRecurrentCell{True, True})(inp::AbstractMatrix,
         ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
-    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, st)
 end
 
@@ -125,3 +125,6 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
     return ps
 end
+
+bias_safe_multigate(::Nothing, ::Val{N}) where {N} = ntuple(_ -> nothing, N)
+bias_safe_multigate(bias, v::Val{N}) where {N} = multigate(bias, v)

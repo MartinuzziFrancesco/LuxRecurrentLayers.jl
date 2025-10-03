@@ -4,7 +4,7 @@
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
@@ -36,14 +36,14 @@
   - `init_bias`: Initializer for input to hidden bias
     $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
     Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
@@ -132,6 +132,8 @@ function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
+    init_recurrent_bias isa NTuple{3} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return BRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
 end
@@ -144,7 +146,7 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(br)
         bias_ih = multi_bias(rng, br.init_bias, br.out_dims, br.out_dims)
-        bias_hh = init_rnn_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
+        bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_ih, bias_hh))
     end
     has_train_state(br) &&
@@ -162,23 +164,21 @@ end
 function (br::BRCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
-    t_ones = eltype(bias_ih)(1.0)
+    t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(full_xs, Val(3))
     ws = multigate(ps.weight_hh, Val(2))
-    bhs = multigate(bias_hh, Val(3))
-    modulation_gate = @. t_ones + tanh_fast(xs[1] + ws[1] * matched_state + bhs[1])
-    candidate_state = @. sigmoid_fast(xs[2] + ws[2] * matched_state + bhs[2])
-    new_state = @. candidate_state * matched_state +
-                   (t_ones - candidate_state) *
-                   tanh_fast(xs[3] + modulation_gate * matched_state + bhs[3])
-
+    bhs = bias_safe_multigate(bias_hh, Val(3))
+    modulation_gate = t_ones .+
+                      bias_activation(tanh_fast, xs[1] .+ ws[1] .* matched_state, bhs[1])
+    candidate_state = bias_activation(sigmoid_fast, xs[2] .+ ws[2] .* matched_state, bhs[2])
+    new_state = candidate_state .* matched_state .+
+                (t_ones .- candidate_state) .*
+                bias_activation(
+        tanh_fast, xs[3] .+ modulation_gate .* matched_state, bhs[3])
     return (new_state, (new_state,)), st
 end
 
@@ -194,7 +194,7 @@ end
         use_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Recurrently neuromodulated bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
 ## Equations
@@ -209,7 +209,7 @@ end
         \mathbf{b}_{hh}^c \right)\\
     \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
         \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
-        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right) 
+        \mathbf{a}(t) \circ \mathbf{h}(t-1)\right)
 \end{aligned}
 ```
 
@@ -226,14 +226,14 @@ end
   - `init_bias`: Initializer for input to hidden bias
     $\mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h$.
     Must be a tuple containing 3 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     3-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
-    If a single function `fn` is provided, it is automatically expanded into a 
+    If a single function `fn` is provided, it is automatically expanded into a
     2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
@@ -342,18 +342,14 @@ end
 function (nbr::NBRCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(nbr, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
-    t_ones = eltype(bias_ih)(1.0)
+    t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     xs = multigate(full_xs, Val(3))
     hs = multigate(full_hs, Val(2))
-
     modulation_gate = @. t_ones + tanh_fast(xs[1] + hs[1])
     candidate_state = @. sigmoid_fast(xs[2] + hs[2])
     new_state = @. candidate_state * matched_state +

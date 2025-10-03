@@ -120,17 +120,13 @@ end
 function (asymrnn::AntisymmetricRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(asymrnn, ps, st, inp, state)
-    #input linear transform
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     linear_input = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #recurrent linear transform
     asym_weight_hh = compute_asym_recurrent(ps.weight_hh, asymrnn.gamma)
     linear_recur = fused_dense_bias_activation(
         identity, asym_weight_hh, matched_state, bias_hh)
-    #putting it all together
     half_new_state = fast_activation!!(asymrnn.activation, linear_input .+ linear_recur)
     new_state = matched_state .+ asymrnn.epsilon .* half_new_state
     return (new_state, (new_state,)), st
@@ -159,7 +155,7 @@ end
 
 ```math
 \begin{aligned}
-    \mathbf{z}(t) &= \sigma\left( 
+    \mathbf{z}(t) &= \sigma\left(
         (\mathbf{W}_{hh} - \mathbf{W}_{hh}^\top - \gamma \cdot \mathbf{I})
         \mathbf{h}(t-1) + \mathbf{b}_{hh} + \mathbf{W}_{ih}^z \mathbf{x}(t)
         + \mathbf{b}_{ih}^z \right), \\

@@ -18,7 +18,7 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:coRNNCell,
         (; kwargs...) -> coRNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:FastGRNNCell,
         (; kwargs...) -> FastGRNNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -33,10 +33,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:JANETCell,
         (; kwargs...) -> JANETCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:LEMCell,
         (; kwargs...) -> LEMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:LightRUCell,
         (; kwargs...) -> LightRUCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -48,10 +48,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:MinimalRNNCell,
         (; kwargs...) -> MinimalRNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:MultiplicativeLSTMCell,
         (; kwargs...) -> MultiplicativeLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:MUT1Cell,
         (; kwargs...) -> MUT1Cell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
@@ -63,41 +63,48 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:NASCell,
         (; kwargs...) -> NASCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:NBRCell,
         (; kwargs...) -> NBRCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
     (:PeepholeLSTMCell,
         (; kwargs...) -> PeepholeLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:RANCell,
         (; kwargs...) -> RANCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:SCRNCell,
         (; kwargs...) -> SCRNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:SGRNCell,
         (; kwargs...) -> SGRNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
     (:STARCell,
         (; kwargs...) -> STARCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
-    (:TGRUCell,
-        (; kwargs...) -> TGRUCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
-    (:TLSTMCell,
-        (; kwargs...) -> TLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+    #    (:TGRUCell,
+    #        (; kwargs...) -> TGRUCell(3 => 5; kwargs...),
+    #        [:use_bias, :train_state]),
+    #    (:TLSTMCell,
+    #        (; kwargs...) -> TLSTMCell(3 => 5; kwargs...),
+    #        [:use_bias, :train_state]),
     (:TRNNCell,
         (; kwargs...) -> TRNNCell(3 => 5; kwargs...),
         [:use_bias, :train_state]),
     (:UnICORNNCell,
         (; kwargs...) -> UnICORNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :train_state, :train_memory]),
     (:WMCLSTMCell,
         (; kwargs...) -> WMCLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state])
+        [:use_bias, :train_state, :train_memory])
 ]
+
+function format_knobs(kw::AbstractDict)
+    join(
+        ["$(String(k))=$(repr(v))"
+         for (k, v) in sort!(collect(kw); by=x -> String(x[1]))],
+        ", ")
+end
 
 function loss_loop(cell, x, p, st)
     (y, carry), st_ = cell(x, p, st)
@@ -115,7 +122,7 @@ function loss_loop_no_carry(cell, x, p, st)
     return sum(abs2, y)
 end
 
-export loss_loop, loss_loop_no_carry, RECURRENT_CELLS
+export loss_loop, loss_loop_no_carry, format_knobs, RECURRENT_CELLS
 
 end
 

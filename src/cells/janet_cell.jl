@@ -35,25 +35,25 @@
     $\mathbf{b}_{ih}^{f}$ and $\mathbf{b}_{ih}^{c}$.
     Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
     If a single function `fn` is provided, it is expanded to `(fn, fn)`.
-    If set to `nothing`, each bias is initialized from a uniform distribution 
+    If set to `nothing`, each bias is initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
     $\mathbf{b}_{hh}^{f}$ and $\mathbf{b}_{hh}^{c}$.
     Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
     If a single function `fn` is provided, it is expanded to `(fn, fn)`.
-    If set to `nothing`, each bias is initialized from a uniform distribution 
+    If set to `nothing`, each bias is initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input-to-hidden weights
     $\mathbf{W}_{ih}^{f}$ and $\mathbf{W}_{ih}^{c}$.
     Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
     If a single function `fn` is provided, it is expanded to `(fn, fn)`.
-    If set to `nothing`, each weight is initialized from a uniform distribution 
+    If set to `nothing`, each weight is initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
     $\mathbf{W}_{hh}^{f}$ and $\mathbf{W}_{hh}^{c}$.
     Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
     If a single function `fn` is provided, it is expanded to `(fn, fn)`.
-    If set to `nothing`, each weight is initialized from a uniform distribution 
+    If set to `nothing`, each weight is initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -76,7 +76,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -90,24 +90,24 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights mapping from input to hidden units  
-    ``\{ \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{c} \}``  
-    The functions provided in `init_weight` are applied in order:  
+  - `weight_ih`: Concatenated weights mapping from input to hidden units
+    ``\{ \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{c} \}``
+    The functions provided in `init_weight` are applied in order:
     the first function initializes $\mathbf{W}_{ih}^{f}$, the second
     initializes $\mathbf{W}_{ih}^{c}$.
-  - `weight_hh`: Concatenated weights mapping from hidden state to hidden units  
-    ``\{ \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{c} \}``  
-    The functions provided in `init_recurrent_weight` are applied in order:  
+  - `weight_hh`: Concatenated weights mapping from hidden state to hidden units
+    ``\{ \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{c} \}``
+    The functions provided in `init_recurrent_weight` are applied in order:
     the first function initializes $\mathbf{W}_{hh}^{f}$, the second
     initializes $\mathbf{W}_{hh}^{c}$.
-  - `bias_ih`: Concatenated input-to-hidden bias vectors (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{c} \}``  
-    The functions provided in `init_bias` are applied in order:  
+  - `bias_ih`: Concatenated input-to-hidden bias vectors (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{c} \}``
+    The functions provided in `init_bias` are applied in order:
     the first function initializes $\mathbf{b}_{ih}^{f}$, the second
     initializes $\mathbf{b}_{ih}^{c}$.
-  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{c} \}``  
-    The functions provided in `init_recurrent_bias` are applied in order:  
+  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{c} \}``
+    The functions provided in `init_recurrent_bias` are applied in order:
     the first function initializes $\mathbf{b}_{hh}^{f}$, the second initializes
     $\mathbf{b}_{hh}^{c}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
@@ -157,21 +157,17 @@ function (janet::JANETCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         janet, ps, st, inp, state, c_state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(2))
     ghs = multigate(full_ghs, Val(2))
-    #computation
     linear_gate = gxs[1] .+ ghs[1]
     candidate_state = @. tanh_fast(gxs[2] + ghs[2])
-    ones_vec = eltype(candidate_state)(1.0)
+    ones_vec = one(eltype(candidate_state))
     new_cstate = @. sigmoid_fast(linear_gate) * c_state +
                     (ones_vec - sigmoid_fast(linear_gate - janet.beta)) *
                     candidate_state

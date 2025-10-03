@@ -26,25 +26,25 @@
 
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}$.
     Must be a tuple containing 2 functions. If a single value is passed, it is
     copied into a 2-element tuple. If set to `nothing`, biases are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{b}_{ih}^{z}$, the second $\mathbf{b}_{ih}^{f}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+    The functions are applied in order: the first initializes
+    $\mathbf{b}_{ih}^{z}$, the second $\mathbf{b}_{ih}^{f}$.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}$.
     Must be a tuple containing 2 functions. If a single value is passed, it is
     copied into a 2-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{f}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+    The functions are applied in order: the first initializes
+    $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{f}$.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -71,12 +71,12 @@
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights to map from input space  
+  - `weight_ih`: Concatenated weights to map from input space
     ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f} \}``
-  - `bias_ih`: Concatenated bias vector for input-hidden connections  
-    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f} \}``  
+  - `bias_ih`: Concatenated bias vector for input-hidden connections
+    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f} \}``
     (not present if `use_bias=false`)
-  - `hidden_state`: Initial hidden state vector  
+  - `hidden_state`: Initial hidden state vector
     (not present if `train_state=false`)
 
 ## States
@@ -134,7 +134,7 @@ function (trnn::TRNNCell)(
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     #computation
-    t_ones = eltype(bias_ih)(1.0f0)
+    t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     gxs = multigate(full_xs, Val(2))
 
@@ -185,41 +185,41 @@ end
 ## Keyword Arguments
 
   - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.  
+  - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, biases are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{b}_{ih}^{z}$, then $\mathbf{b}_{ih}^{f}$, and $\mathbf{b}_{ih}^{o}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+    The functions are applied in order: the first initializes
+    $\mathbf{b}_{ih}^{z}$, then $\mathbf{b}_{ih}^{f}$, and $\mathbf{b}_{ih}^{o}$.
     Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
     $\mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, biases are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{W}_{ih}^{z}$, then $\mathbf{W}_{ih}^{f}$, and $\mathbf{W}_{ih}^{o}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+    The functions are applied in order: the first initializes
+    $\mathbf{W}_{ih}^{z}$, then $\mathbf{W}_{ih}^{f}$, and $\mathbf{W}_{ih}^{o}$.
     Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o}$.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -242,7 +242,7 @@ end
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -256,19 +256,19 @@ end
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights for input-to-hidden transformations  
+  - `weight_ih`: Concatenated weights for input-to-hidden transformations
     ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o} \}``.
-  - `weight_hh`: Concatenated weights for hidden-to-hidden transformations  
+  - `weight_hh`: Concatenated weights for hidden-to-hidden transformations
     ``\{ \mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o} \}``.
   - `bias_ih`: Input-to-hidden bias vector
     ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``.
     (not present if `use_bias=false`).
   - `bias_hh`: Hidden-to-hidden bias vector
-    ``\{ \mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o} \}``. 
+    ``\{ \mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o} \}``.
     (not present if `use_bias=false`).
-  - `hidden_state`: Initial hidden state vector  
+  - `hidden_state`: Initial hidden state vector
     (not present if `train_state=false`).
-  - `memory`: Initial memory vector  
+  - `memory`: Initial memory vector
     (not present if `train_memory=false`).
 
 ## States
@@ -363,7 +363,7 @@ end
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{z}(t) &= \mathbf{W}_{mh}^{z} \mathbf{x}(t{-}1) + \mathbf{b}_{mh}^{z} + 
+    \mathbf{z}(t) &= \mathbf{W}_{mh}^{z} \mathbf{x}(t{-}1) + \mathbf{b}_{mh}^{z} +
         \mathbf{W}_{ih}^{z} \mathbf{x}(t) + \mathbf{b}_{ih}^{z} \\
     \mathbf{f}(t) &= \sigma\left( \mathbf{W}_{mh}^{f} \mathbf{x}(t{-}1) + \mathbf{b}_{mh}^{f} +
         \mathbf{W}_{ih}^{f} \mathbf{x}(t) + \mathbf{b}_{ih}^{f} \right) \\
@@ -383,49 +383,49 @@ end
 ## Keyword Arguments
 
 - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-- `train_state`: Flag to set the initial hidden state as trainable.  
+- `train_state`: Flag to set the initial hidden state as trainable.
   Default set to `false`.
-- `train_memory`: Flag to set the initial memory state as trainable.  
+- `train_memory`: Flag to set the initial memory state as trainable.
   Default set to `false`.
-- `init_bias`: Initializer for input-to-hidden biases  
-  $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.  
+- `init_bias`: Initializer for input-to-hidden biases
+  $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.
   Must be a tuple containing 3 functions. If a single value is passed, it is
   copied into a 3-element tuple. If set to `nothing`, biases are initialized
-  from a uniform distribution within `[-bound, bound]`,  
-  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-  The functions are applied in order to initialize  
-  $\mathbf{b}_{ih}^{z}$, $\mathbf{b}_{ih}^{f}$, $\mathbf{b}_{ih}^{o}$$.  
+  from a uniform distribution within `[-bound, bound]`,
+  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+  The functions are applied in order to initialize
+  $\mathbf{b}_{ih}^{z}$, $\mathbf{b}_{ih}^{f}$, $\mathbf{b}_{ih}^{o}$$.
   Default set to `nothing`.
-- `init_recurrent_bias`: Initializer for memory-to-hidden biases  
-  $\mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o}$.  
+- `init_recurrent_bias`: Initializer for memory-to-hidden biases
+  $\mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o}$.
   Must be a tuple containing 3 functions. If a single value is passed, it is
   copied into a 3-element tuple. If set to `nothing`, biases are initialized
-  from a uniform distribution within `[-bound, bound]`,  
-  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-  The functions are applied in order to initialize  
-  $\mathbf{b}_{mh}^{z}$, $\mathbf{b}_{mh}^{f}$, $\mathbf{b}_{mh}^{o}$$.  
+  from a uniform distribution within `[-bound, bound]`,
+  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+  The functions are applied in order to initialize
+  $\mathbf{b}_{mh}^{z}$, $\mathbf{b}_{mh}^{f}$, $\mathbf{b}_{mh}^{o}$$.
   Default set to `nothing`.
-- `init_weight`: Initializer for input-to-hidden weights  
-  $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.  
+- `init_weight`: Initializer for input-to-hidden weights
+  $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.
   Must be a tuple containing 3 functions. If a single value is passed, it is
   copied into a 3-element tuple. If set to `nothing`, weights are initialized
-  from a uniform distribution within `[-bound, bound]`,  
-  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-  The functions are applied in order to initialize  
-  $\mathbf{W}_{ih}^{z}$, $\mathbf{W}_{ih}^{f}$, $\mathbf{W}_{ih}^{o}$$.  
+  from a uniform distribution within `[-bound, bound]`,
+  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+  The functions are applied in order to initialize
+  $\mathbf{W}_{ih}^{z}$, $\mathbf{W}_{ih}^{f}$, $\mathbf{W}_{ih}^{o}$$.
   Default set to `nothing`.
-- `init_recurrent_weight`: Initializer for memory-to-hidden weights  
-  $\mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o}$.  
+- `init_recurrent_weight`: Initializer for memory-to-hidden weights
+  $\mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o}$.
   Must be a tuple containing 3 functions. If a single value is passed, it is
   copied into a 3-element tuple. If set to `nothing`, weights are initialized
-  from a uniform distribution within `[-bound, bound]`,  
-  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.  
-  The functions are applied in order to initialize  
-  $\mathbf{W}_{mh}^{z}$, $\mathbf{W}_{mh}^{f}$, $\mathbf{W}_{mh}^{o}$$.  
+  from a uniform distribution within `[-bound, bound]`,
+  where `bound = \mathrm{inv}(\sqrt{\mathrm{out\_dims}})`.
+  The functions are applied in order to initialize
+  $\mathbf{W}_{mh}^{z}$, $\mathbf{W}_{mh}^{f}$, $\mathbf{W}_{mh}^{o}$$.
   Default set to `nothing`.
-- `init_state`: Initializer for hidden state.  
+- `init_state`: Initializer for hidden state.
   Default set to `zeros32`.
-- `init_memory`: Initializer for memory.  
+- `init_memory`: Initializer for memory.
   Default set to `zeros32`.
 
 
@@ -446,7 +446,7 @@ end
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -460,19 +460,19 @@ end
 
 ## Parameters
 
-  - `weight_ih`: Concatenated weights for input-to-hidden transformations  
+  - `weight_ih`: Concatenated weights for input-to-hidden transformations
     ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o} \}``.
-  - `weight_mh`: Concatenated weights for memory-to-hidden transformations  
+  - `weight_mh`: Concatenated weights for memory-to-hidden transformations
     ``\{ \mathbf{W}_{mh}^{z}, \mathbf{W}_{mh}^{f}, \mathbf{W}_{mh}^{o} \}``.
-  - `bias_ih`: Concatenated bias vector for input-to-hidden transformations  
-    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``.  
+  - `bias_ih`: Concatenated bias vector for input-to-hidden transformations
+    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``.
     Not present if `use_bias = false`.
-  - `bias_mh`: Concatenated bias vector for memory-to-hidden transformations  
-    ``\{ \mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o} \}``.  
+  - `bias_mh`: Concatenated bias vector for memory-to-hidden transformations
+    ``\{ \mathbf{b}_{mh}^{z}, \mathbf{b}_{mh}^{f}, \mathbf{b}_{mh}^{o} \}``.
     Not present if `use_bias = false`.
-  - `hidden_state`: Initial hidden state vector.  
+  - `hidden_state`: Initial hidden state vector.
     Not present if `train_state = false`.
-  - `memory`: Initial memory state vector.  
+  - `memory`: Initial memory state vector.
     Not present if `train_memory = false`.
 
 
@@ -551,7 +551,7 @@ function (lstm::TLSTMCell)(
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_previnp, bias_hh)
     full_gates = @. full_gxs + full_ghs
-    t_ones = eltype(bias_ih)(1.0f0)
+    t_ones = one(eltype(matched_inp))
     gates = multigate(full_gates, Val(3))
     update_gate = @. sigmoid_fast(gates[2])
     candidate_state = @. tanh_fast(gates[3])

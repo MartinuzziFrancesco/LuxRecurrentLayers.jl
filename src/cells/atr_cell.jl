@@ -124,12 +124,9 @@ statelength(::ATRCell) = 1
 function (atr::ATRCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(atr, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     pt = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     qt = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     it = @. sigmoid_fast(pt + qt)
