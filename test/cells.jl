@@ -1,4 +1,4 @@
-@testitem "Cells" setup = [SharedTestSetup, RecurrentLayersSetup] tags = [
+@testitem "Cells" setup=[SharedTestSetup, RecurrentLayersSetup] tags=[
     :recurrent_layers
 ] begin
     rng = StableRNG(12345)
@@ -13,7 +13,7 @@
                         ps, st = dev(Lux.setup(rng, cell))
 
                         # String-keyed knobs for logging / debugging
-                        cell_knobs = Dict{String,Any}(String(k) => v for (k, v) in kw)
+                        cell_knobs = Dict{String, Any}(String(k) => v for (k, v) in kw)
 
                         # IMPORTANT: wrap in a string literal with interpolation
                         @testset "$(format_knobs(kw))" begin
@@ -33,15 +33,13 @@
                                     @test !hasproperty(ps, :hidden_state)
                                 end
 
-                                @test_gradients(
-                                    loss_loop,
+                                @test_gradients(loss_loop,
                                     cell,
                                     x,
                                     ps,
                                     st;
                                     atol=1e-3,
-                                    rtol=1e-3,
-                                )
+                                    rtol=1e-3,)
                             end
                         end
                     end

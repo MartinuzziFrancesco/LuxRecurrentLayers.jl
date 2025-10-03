@@ -1,5 +1,5 @@
 abstract type AbstractSingleRecurrentCell{TS} <: AbstractRecurrentCell end
-abstract type AbstractDoubleRecurrentCell{TS,TM} <: AbstractRecurrentCell end
+abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
 
 function multi_inits(rng::AbstractRNG, inits, args...)
     weights = vcat(
@@ -19,45 +19,45 @@ end
 
 ### single return forward
 function (rcell::AbstractSingleRecurrentCell{False})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state,)), ps, merge(st, (; rng)))
 end
 
 function (rcell::AbstractSingleRecurrentCell{True})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+        ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state,)), ps, st)
 end
 
 ### double return forward
-function (rcell::AbstractDoubleRecurrentCell{False,False})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{False, False})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{True,False})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{True, False})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{False,True})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{False, True})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{True,True})(inp::AbstractMatrix,
-    ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{True, True})(inp::AbstractMatrix,
+        ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, st)

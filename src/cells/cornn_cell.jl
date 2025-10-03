@@ -114,8 +114,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct coRNNCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct coRNNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -134,11 +134,11 @@
     epsilon
 end
 
-function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
-    init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-    init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
+        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight,
         init_recurrent_weight, init_cell_weight, init_state, init_memory,
@@ -173,10 +173,10 @@ function parameterlength(cornn::coRNNCell)
 end
 
 function (cornn::coRNNCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon

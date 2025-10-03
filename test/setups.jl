@@ -99,9 +99,12 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state, :train_memory])
 ]
 
-format_knobs(kw::AbstractDict) =
-    join(["$(String(k))=$(repr(v))"
-          for (k, v) in sort!(collect(kw); by=x -> String(x[1]))], ", ")
+function format_knobs(kw::AbstractDict)
+    join(
+        ["$(String(k))=$(repr(v))"
+         for (k, v) in sort!(collect(kw); by=x -> String(x[1]))],
+        ", ")
+end
 
 function loss_loop(cell, x, p, st)
     (y, carry), st_ = cell(x, p, st)
@@ -130,7 +133,7 @@ import Reexport: @reexport
 @reexport using LuxTestUtils, Lux
 
 using MLDataDevices, LuxCUDA, StableRNGs,
-    LinearAlgebra, JET
+      LinearAlgebra, JET
 
 if !@isdefined(BACKEND_GROUP)
     const BACKEND_GROUP = lowercase(get(ENV, "BACKEND_GROUP", "all"))
@@ -190,14 +193,14 @@ function maybe_rewrite_to_crosscor(mode, model)
 end
 
 export BACKEND_GROUP,
-    MODES,
-    cpu_testing,
-    cuda_testing,
-    amdgpu_testing,
-    get_default_rng,
-    StableRNG,
-    maybe_rewrite_to_crosscor,
-    check_approx,
-    allow_unstable
+       MODES,
+       cpu_testing,
+       cuda_testing,
+       amdgpu_testing,
+       get_default_rng,
+       StableRNG,
+       maybe_rewrite_to_crosscor,
+       check_approx,
+       allow_unstable
 
 end

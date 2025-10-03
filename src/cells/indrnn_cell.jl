@@ -76,7 +76,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct IndRNNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct IndRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -90,10 +90,10 @@
 end
 
 function IndRNNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     return IndRNNCell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias))
@@ -124,8 +124,8 @@ function parameterlength(indrnn::IndRNNCell)
 end
 
 function (indrnn::IndRNNCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(indrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

@@ -102,8 +102,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct UnICORNNCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct UnICORNNCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -120,11 +120,11 @@
     alpha
 end
 
-function UnICORNNCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_control_weight=nothing, init_recurrent_bias=nothing,
-    init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, alpha::Number=0.0f0)
+function UnICORNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_control_weight=nothing, init_recurrent_bias=nothing,
+        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, alpha::Number=0.0f0)
     return UnICORNNCell(static(train_state), static(train_memory), in_dims,
         out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_control_weight,
@@ -161,10 +161,10 @@ function parameterlength(unicornn::UnICORNNCell)
 end
 
 function (unicornn::UnICORNNCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         unicornn, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
