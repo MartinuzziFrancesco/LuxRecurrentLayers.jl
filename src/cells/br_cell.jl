@@ -1,7 +1,7 @@
 #https://doi.org/10.1371/journal.pone.0252676
 @doc raw"""
     BRCell(in_dims => out_dims;
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
 
@@ -30,7 +30,10 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -112,7 +115,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct BRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct BRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -122,12 +125,14 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
-function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function BRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+    train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -135,7 +140,8 @@ function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_bias isa NTuple{3} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return BRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias),
+        static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, br::BRCell)
@@ -146,8 +152,10 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(br)
         bias_ih = multi_bias(rng, br.init_bias, br.out_dims, br.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(br)
         bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(br) &&
         (ps = merge(ps, (hidden_state=br.init_state(rng, br.out_dims),)))
@@ -162,8 +170,8 @@ function parameterlength(br::BRCell)
 end
 
 function (br::BRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -191,7 +199,7 @@ end
 
 @doc raw"""
     NBRCell(in_dims => out_dims;
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_ bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
 
@@ -220,7 +228,10 @@ end
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -275,7 +286,7 @@ end
 
 ## Parameters
 
-    - `weight_ih`: Concatenated weights to map from input to the hidden state
+  - `weight_ih`: Concatenated weights to map from input to the hidden state
                  ``\{ \mathbf{W}_{ih}^a, \mathbf{W}_{ih}^c, \mathbf{W}_{ih}^h \}``
     The initializers in `init_weight` are applied in the order they appear:
     the first function is used for $\mathbf{W}_{ih}^a$, the second for $\mathbf{W}_{ih}^c$,
@@ -302,7 +313,7 @@ end
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NBRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct NBRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -312,12 +323,14 @@ end
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
-function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+function NBRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+    train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -325,7 +338,7 @@ function NBRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return NBRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, nbr::NBRCell)
@@ -340,8 +353,8 @@ function parameterlength(nbr::NBRCell)
 end
 
 function (nbr::NBRCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(nbr, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

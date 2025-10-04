@@ -1,5 +1,15 @@
 abstract type AbstractSingleRecurrentCell{TS} <: AbstractRecurrentCell end
-abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
+abstract type AbstractDoubleRecurrentCell{TS,TM} <: AbstractRecurrentCell end
+
+# from lux extendend ops
+for (op, field) in (
+    :recurrent_bias => :use_recurrent_bias,
+)
+    @eval function $(Symbol(:has_, op))(l::AbstractLuxLayer)
+        res = known(safe_getproperty(l, Val($(Meta.quot(field)))))
+        return ifelse(res === nothing, false, res)
+    end
+end
 
 function multi_inits(rng::AbstractRNG, inits, args...)
     weights = vcat(
@@ -19,45 +29,45 @@ end
 
 ### single return forward
 function (rcell::AbstractSingleRecurrentCell{False})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+    ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state,)), ps, merge(st, (; rng)))
 end
 
 function (rcell::AbstractSingleRecurrentCell{True})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+    ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     return rcell((inp, (state,)), ps, st)
 end
 
 ### double return forward
-function (rcell::AbstractDoubleRecurrentCell{False, False})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{False,False})(inp::AbstractMatrix,
+    ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{True, False})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{True,False})(inp::AbstractMatrix,
+    ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_rnn_hidden_state(rng, rcell, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{False, True})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{False,True})(inp::AbstractMatrix,
+    ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
     c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, merge(st, (; rng)))
 end
 
-function (rcell::AbstractDoubleRecurrentCell{True, True})(inp::AbstractMatrix,
-        ps, st::NamedTuple)
+function (rcell::AbstractDoubleRecurrentCell{True,True})(inp::AbstractMatrix,
+    ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
     c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state)), ps, st)
@@ -81,9 +91,11 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrentC
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -98,9 +110,11 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractDoubleRecurrentC
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -118,8 +132,10 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = init_rnn_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
