@@ -1,7 +1,8 @@
 #https://arxiv.org/pdf/1611.01578
 @doc raw"""
     NASCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32)
@@ -55,40 +56,43 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.  
+  - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}$.
     Must be a tuple containing 8 functions. If a single value is passed, it is
     copied into an 8-element tuple. If set to `nothing`, weights are initialized
     from a uniform distribution within `[-bound, bound]`, where
     `bound = inv(sqrt(out_dims))`. The functions are applied in order to
     initialize $\mathbf{b}_{ih}^{(1)}$ through $\mathbf{b}_{ih}^{(8)}$.
     Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
-    $\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}$.  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}$.
     Must be a tuple containing 8 functions. If a single value is passed, it is
     copied into an 8-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
+    from a uniform distribution within `[-bound, bound]`,
     where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
     initialize $\mathbf{b}_{hh}^{(1)}$ through $\mathbf{b}_{hh}^{(8)}$.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}$.
     Must be a tuple containing 8 functions. If a single value is passed, it is
     copied into an 8-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
+    from a uniform distribution within `[-bound, bound]`,
     where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
     initialize $\mathbf{W}_{ih}^{(1)}$ through $\mathbf{W}_{ih}^{(8)}$.
     Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}$.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}$.
     Must be a tuple containing 8 functions. If a single value is passed, it is
     copied into an 8-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
+    from a uniform distribution within `[-bound, bound]`,
     where `bound = inv(sqrt(out_dims))`. The functions are applied in order to
     initialize $\mathbf{W}_{hh}^{(1)}$ through $\mathbf{W}_{hh}^{(8)}$.
     Default set to `nothing`.
@@ -112,7 +116,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -126,15 +130,15 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weights  
-    ``\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}``  
-  - `weight_hh`: Hidden-to-hidden weights  
-    ``\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}``  
-  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}``  
-  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}``  
-  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)  
+  - `weight_ih`: Input-to-hidden weights
+    ``\{ \mathbf{W}_{ih}^{(1)}, \mathbf{W}_{ih}^{(2)}, \dots, \mathbf{W}_{ih}^{(8)} \}``
+  - `weight_hh`: Hidden-to-hidden weights
+    ``\{ \mathbf{W}_{hh}^{(1)}, \mathbf{W}_{hh}^{(2)}, \dots, \mathbf{W}_{hh}^{(8)} \}``
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{(1)}, \mathbf{b}_{ih}^{(2)}, \dots, \mathbf{b}_{ih}^{(8)} \}``
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{(1)}, \mathbf{b}_{hh}^{(2)}, \dots, \mathbf{b}_{hh}^{(8)} \}``
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
 ## States
@@ -142,8 +146,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NASCell{TS <: StaticBool, TM <: StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS, TM}
+@concrete struct NASCell{TS<:StaticBool,TM<:StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS,TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -155,13 +159,14 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
-function NASCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_recurrent_bias=nothing,
-        init_state=zeros32, init_memory=zeros32)
+function NASCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_recurrent_bias=nothing,
+    init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{8} || (init_weight = ntuple(Returns(init_weight), 8))
     init_recurrent_weight isa NTuple{8} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 8))
@@ -170,7 +175,7 @@ function NASCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 8))
     return NASCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_memory, static(use_bias))
+        init_state, init_memory, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, nas::NASCell)
@@ -183,10 +188,10 @@ function parameterlength(nas::NASCell)
 end
 
 function (nas::NASCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp,
+        (state, c_state))::Tuple{
+        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         nas, ps, st, inp, state, c_state)

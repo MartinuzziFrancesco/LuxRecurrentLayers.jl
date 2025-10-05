@@ -1,7 +1,8 @@
 #https://www.jmlr.org/papers/volume3/gers02a/gers02a.pdf
 @doc raw"""
     PeepholeLSTMCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true, use_peephole_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing, init_peephole_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_peephole_weight=nothing, init_state=zeros32, init_memory=zeros32)
@@ -43,63 +44,68 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `use_peephole_bias`: Flag to use peephole bias $\mathbf{b}_{ph}$ in the computation.
+    Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.  
+  - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o}$.
     Must be a tuple containing 4 functions. If a single value is passed, it is
     copied into a 4-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.  
+    from a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.
     The functions are applied in order: the first initializes $\mathbf{b}_{ih}^{z}$,
     the second $\mathbf{b}_{ih}^{i}$, the third $\mathbf{b}_{ih}^{f}$,
     and the fourth $\mathbf{b}_{ih}^{o}$. Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
-    $\mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o}$.  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o}$.
     Must be a tuple containing 4 functions. If a single value is passed, it is
     copied into a 4-element tuple. If set to `nothing`, weights are initialized
     from a uniform distribution within `[-bound, bound]`, where
-    `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
-    the first initializes $\mathbf{b}_{hh}^{z}$, the second $\mathbf{b}_{hh}^{i}$,  
-    the third $\mathbf{b}_{hh}^{f}$, and the fourth $\mathbf{b}_{hh}^{o}$.  
+    `bound = inv(sqrt(out_dims))`. The functions are applied in order:
+    the first initializes $\mathbf{b}_{hh}^{z}$, the second $\mathbf{b}_{hh}^{i}$,
+    the third $\mathbf{b}_{hh}^{f}$, and the fourth $\mathbf{b}_{hh}^{o}$.
     Default set to `nothing`.
-  - `init_peephole_bias`: Initializer for peephole biases  
-    $\mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o}$.  
+  - `init_peephole_bias`: Initializer for peephole biases
+    $\mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`, 
-    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
-    the first initializes $\mathbf{b}_{ph}^{i}$, the second $\mathbf{b}_{ph}^{f}$,  
-    and the third $\mathbf{b}_{ph}^{o}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:
+    the first initializes $\mathbf{b}_{ph}^{i}$, the second $\mathbf{b}_{ph}^{f}$,
+    and the third $\mathbf{b}_{ph}^{o}$.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o}$.
     Must be a tuple containing 4 functions. If a single value is passed, it is
     copied into a 4-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
-    the first initializes $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{i}$,  
-    the third $\mathbf{W}_{ih}^{f}$, and the fourth $\mathbf{W}_{ih}^{o}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:
+    the first initializes $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{i}$,
+    the third $\mathbf{W}_{ih}^{f}$, and the fourth $\mathbf{W}_{ih}^{o}$.
     Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o}$.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o}$.
     Must be a tuple containing 4 functions. If a single value is passed, it is
-    copied into a 4-element tuple. If set to `nothing`, weights are initialized 
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
-    the first initializes $\mathbf{W}_{hh}^{z}$, the second $\mathbf{W}_{hh}^{i}$,  
-    the third $\mathbf{W}_{hh}^{f}$, and the fourth $\mathbf{W}_{hh}^{o}$.  
+    copied into a 4-element tuple. If set to `nothing`, weights are initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:
+    the first initializes $\mathbf{W}_{hh}^{z}$, the second $\mathbf{W}_{hh}^{i}$,
+    the third $\mathbf{W}_{hh}^{f}$, and the fourth $\mathbf{W}_{hh}^{o}$.
     Default set to `nothing`.
-  - `init_peephole_weight`: Initializer for peephole weights  
-    $\mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o}$.  
+  - `init_peephole_weight`: Initializer for peephole weights
+    $\mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o}$.
     Must be a tuple containing 3 functions. If a single value is passed, it is
     copied into a 3-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:  
-    the first initializes $\mathbf{p}^{i}$, the second $\mathbf{p}^{f}$,  
-    and the third $\mathbf{p}^{o}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`. The functions are applied in order:
+    the first initializes $\mathbf{p}^{i}$, the second $\mathbf{p}^{f}$,
+    and the third $\mathbf{p}^{o}$.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -121,7 +127,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -135,19 +141,19 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weights  
-    ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o} \}``  
-  - `weight_hh`: Hidden-to-hidden weights  
-    ``\{ \mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o} \}``  
-  - `weight_ph`: Peephole weights  
-    ``\{ \mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o} \}``  
-  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``  
-  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o} \}``  
-  - `bias_ph`: Peephole biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o} \}``  
-  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)  
+  - `weight_ih`: Input-to-hidden weights
+    ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{f}, \mathbf{W}_{ih}^{o} \}``
+  - `weight_hh`: Hidden-to-hidden weights
+    ``\{ \mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{f}, \mathbf{W}_{hh}^{o} \}``
+  - `weight_ph`: Peephole weights
+    ``\{ \mathbf{p}^{i}, \mathbf{p}^{f}, \mathbf{p}^{o} \}``
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{f}, \mathbf{b}_{ih}^{o} \}``
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{f}, \mathbf{b}_{hh}^{o} \}``
+  - `bias_ph`: Peephole biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ph}^{i}, \mathbf{b}_{ph}^{f}, \mathbf{b}_{ph}^{o} \}``
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
 ## States
@@ -155,8 +161,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct PeepholeLSTMCell{TS <: StaticBool, TM <: StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS, TM}
+@concrete struct PeepholeLSTMCell{TS<:StaticBool,TM<:StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS,TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -170,13 +176,16 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
+    use_peepehole_bias <: StaticBool
 end
 
-function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_peephole_weight=nothing, init_recurrent_bias=nothing, init_peephole_bias=nothing,
-        init_state=zeros32, init_memory=zeros32)
+function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_peephole_bias::BoolType=True(),
+    train_state::BoolType=False(), train_memory::BoolType=False(),
+    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_peephole_weight=nothing, init_recurrent_bias=nothing, init_peephole_bias=nothing,
+    init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{4} || (init_weight = ntuple(Returns(init_weight), 4))
     init_recurrent_weight isa NTuple{4} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 4))
@@ -189,11 +198,10 @@ function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType
         (init_peephole_bias = ntuple(Returns(init_peephole_bias), 3))
     return PeepholeLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_peephole_bias, init_weight, init_recurrent_weight,
-        init_peephole_weight, init_state, init_memory, static(use_bias))
+        init_peephole_weight, init_state, init_memory, static(use_bias), static(use_recurrent_bias), static(use_peephole_bias))
 end
 
 function initialparameters(rng::AbstractRNG, lstm::PeepholeLSTMCell)
-    # weights
     weight_ih = multi_inits(
         rng, lstm.init_weight, lstm.out_dims, (lstm.out_dims, lstm.in_dims))
     weight_hh = multi_inits(
@@ -201,14 +209,16 @@ function initialparameters(rng::AbstractRNG, lstm::PeepholeLSTMCell)
     weight_ph = multi_inits(
         rng, lstm.init_peephole_weight, lstm.out_dims, (lstm.out_dims, lstm.out_dims))
     ps = (; weight_ih, weight_hh, weight_ph)
-    # biases
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(lstm)
         bias_hh = multi_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
+        ps = merge(ps, (; bias_hh))
+    elseif has_peephole_bias(lstm)
         bias_ph = multi_bias(rng, lstm.init_peephole_bias, lstm.out_dims, lstm.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh, bias_ph))
+        ps = merge(ps, (; bias_ph))
     end
-    # trainable state and/or memory
     has_train_state(lstm) &&
         (ps = merge(ps, (hidden_state=lstm.init_state(rng, lstm.out_dims),)))
     known(lstm.train_memory) &&
@@ -222,10 +232,10 @@ function parameterlength(lstm::PeepholeLSTMCell)
 end
 
 function (lstm::PeepholeLSTMCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp,
+        (state, c_state))::Tuple{
+        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         lstm, ps, st, inp, state, c_state)

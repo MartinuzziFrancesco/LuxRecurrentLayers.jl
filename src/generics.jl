@@ -4,6 +4,9 @@ abstract type AbstractDoubleRecurrentCell{TS,TM} <: AbstractRecurrentCell end
 # from lux extendend ops
 for (op, field) in (
     :recurrent_bias => :use_recurrent_bias,
+    :cell_bias => :use_cell_bias,
+    :memory_bias => :use_memory_bias,
+    :peephole_bias => :use_peephole_bias,
 )
     @eval function $(Symbol(:has_, op))(l::AbstractLuxLayer)
         res = known(safe_getproperty(l, Val($(Meta.quot(field)))))

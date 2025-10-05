@@ -1,7 +1,8 @@
 #https://arxiv.org/abs/1609.07959
 @doc raw"""
     MultiplicativeLSTMCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true, use_multiplicative_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_multiplicative_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_multiplicative_weight=nothing,
@@ -39,52 +40,57 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `use_multiplicative_bias`: Flag to use multiplicative bias $\mathbf{b}_{mh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{m}, \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{o}, \mathbf{b}_{ih}^{f}$.  
-    Must be a tuple containing 5 functions. If a single value is passed, it is copied into a 5-element tuple.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order:  
-    the first initializes $\mathbf{b}_{ih}^{m}$, the second $\mathbf{b}_{ih}^{h}$, the third $\mathbf{b}_{ih}^{i}$,  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{m}, \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{o}, \mathbf{b}_{ih}^{f}$.
+    Must be a tuple containing 5 functions. If a single value is passed, it is copied into a 5-element tuple.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order:
+    the first initializes $\mathbf{b}_{ih}^{m}$, the second $\mathbf{b}_{ih}^{h}$, the third $\mathbf{b}_{ih}^{i}$,
     the fourth $\mathbf{b}_{ih}^{o}$, and the fifth $\mathbf{b}_{ih}^{f}$.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
-    $\mathbf{b}_{hh}^{m}$.  
-    Must be a tuple containing 1 function. If a single value is passed, it is used directly.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-  - `init_multiplicative_bias`: Initializer for multiplicative-to-hidden biases  
-    $\mathbf{b}_{mh}^{h}, \mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{o}, \mathbf{b}_{mh}^{f}$.  
-    Must be a tuple containing 4 functions. If a single value is passed, it is copied into a 4-element tuple.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order:  
-    the first initializes $\mathbf{b}_{mh}^{h}$, the second $\mathbf{b}_{mh}^{i}$,  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\mathbf{b}_{hh}^{m}$.
+    Must be a tuple containing 1 function. If a single value is passed, it is used directly.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+  - `init_multiplicative_bias`: Initializer for multiplicative-to-hidden biases
+    $\mathbf{b}_{mh}^{h}, \mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{o}, \mathbf{b}_{mh}^{f}$.
+    Must be a tuple containing 4 functions. If a single value is passed, it is copied into a 4-element tuple.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order:
+    the first initializes $\mathbf{b}_{mh}^{h}$, the second $\mathbf{b}_{mh}^{i}$,
     the third $\mathbf{b}_{mh}^{o}$, and the fourth $\mathbf{b}_{mh}^{f}$.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{m}, \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{o}, \mathbf{W}_{ih}^{f}$.  
-    Must be a tuple containing 5 functions. If a single value is passed, it is copied into a 5-element tuple.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order:  
-    the first initializes $\mathbf{W}_{ih}^{m}$, the second $\mathbf{W}_{ih}^{h}$,  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{m}, \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{o}, \mathbf{W}_{ih}^{f}$.
+    Must be a tuple containing 5 functions. If a single value is passed, it is copied into a 5-element tuple.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order:
+    the first initializes $\mathbf{W}_{ih}^{m}$, the second $\mathbf{W}_{ih}^{h}$,
     the third $\mathbf{W}_{ih}^{i}$, the fourth $\mathbf{W}_{ih}^{o}$, and the fifth $\mathbf{W}_{ih}^{f}$.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\mathbf{W}_{hh}^{m}$.  
-    Must be a tuple containing 1 function. If a single value is passed, it is used directly.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-  - `init_multiplicative_weight`: Initializer for multiplicative-to-hidden weights  
-    $\mathbf{W}_{mh}^{h}, \mathbf{W}_{mh}^{i}, \mathbf{W}_{mh}^{o}, \mathbf{W}_{mh}^{f}$.  
-    Must be a tuple containing 4 functions. If a single value is passed, it is copied into a 4-element tuple.  
-    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order:  
-    the first initializes $\mathbf{W}_{mh}^{h}$, the second $\mathbf{W}_{mh}^{i}$,  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{hh}^{m}$.
+    Must be a tuple containing 1 function. If a single value is passed, it is used directly.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+  - `init_multiplicative_weight`: Initializer for multiplicative-to-hidden weights
+    $\mathbf{W}_{mh}^{h}, \mathbf{W}_{mh}^{i}, \mathbf{W}_{mh}^{o}, \mathbf{W}_{mh}^{f}$.
+    Must be a tuple containing 4 functions. If a single value is passed, it is copied into a 4-element tuple.
+    If set to `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order:
+    the first initializes $\mathbf{W}_{mh}^{h}$, the second $\mathbf{W}_{mh}^{i}$,
     the third $\mathbf{W}_{mh}^{o}$, and the fourth $\mathbf{W}_{mh}^{f}$.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -106,7 +112,7 @@
              to `true`, `train_memory` is set to `true` - Repeats the hidden state and
              memory vectors from the parameters to match the shape of  `x` and proceeds to
              Case 2.
-  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the 
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
             updated hidden state and memory is returned.
 
 ## Returns
@@ -120,18 +126,18 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weights  
-    ``\{ \mathbf{W}_{ih}^{m}, \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{o}, \mathbf{W}_{ih}^{f} \}``  
-  - `weight_hh`: Hidden-to-hidden weights  
-    ``\{ \mathbf{W}_{hh}^{m} \}``  
-  - `weight_mh`: Multiplicative-to-hidden weights  
-    ``\{ \mathbf{W}_{mh}^{h}, \mathbf{W}_{mh}^{i}, \mathbf{W}_{mh}^{o}, \mathbf{W}_{mh}^{f} \}``  
-  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{m}, \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{o}, \mathbf{b}_{ih}^{f} \}``  
-  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{m} \}``  
-  - `bias_mh`: Multiplicative-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{mh}^{h}, \mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{o}, \mathbf{b}_{mh}^{f} \}``  
+  - `weight_ih`: Input-to-hidden weights
+    ``\{ \mathbf{W}_{ih}^{m}, \mathbf{W}_{ih}^{h}, \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{o}, \mathbf{W}_{ih}^{f} \}``
+  - `weight_hh`: Hidden-to-hidden weights
+    ``\{ \mathbf{W}_{hh}^{m} \}``
+  - `weight_mh`: Multiplicative-to-hidden weights
+    ``\{ \mathbf{W}_{mh}^{h}, \mathbf{W}_{mh}^{i}, \mathbf{W}_{mh}^{o}, \mathbf{W}_{mh}^{f} \}``
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{m}, \mathbf{b}_{ih}^{h}, \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{o}, \mathbf{b}_{ih}^{f} \}``
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{m} \}``
+  - `bias_mh`: Multiplicative-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{mh}^{h}, \mathbf{b}_{mh}^{i}, \mathbf{b}_{mh}^{o}, \mathbf{b}_{mh}^{f} \}``
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
@@ -140,8 +146,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct MultiplicativeLSTMCell{TS <: StaticBool, TM <: StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS, TM}
+@concrete struct MultiplicativeLSTMCell{TS<:StaticBool,TM<:StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS,TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -155,13 +161,16 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
+    use_multiplicative_bias <: StaticBool
 end
 
-function MultiplicativeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_multiplicative_weight=nothing, init_recurrent_bias=nothing, init_multiplicative_bias=nothing,
-        init_state=zeros32, init_memory=zeros32)
+function MultiplicativeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_multiplicative_bias::BoolType=True(),
+    train_state::BoolType=False(), train_memory::BoolType=False(),
+    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_multiplicative_weight=nothing, init_recurrent_bias=nothing, init_multiplicative_bias=nothing,
+    init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{5} || (init_weight = ntuple(Returns(init_weight), 5))
     init_multiplicative_weight isa NTuple{4} ||
         (init_multiplicative_weight = ntuple(Returns(init_multiplicative_weight), 4))
@@ -171,11 +180,10 @@ function MultiplicativeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:Integ
     return MultiplicativeLSTMCell(
         static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_multiplicative_bias, init_weight, init_recurrent_weight,
-        init_multiplicative_weight, init_state, init_memory, static(use_bias))
+        init_multiplicative_weight, init_state, init_memory, static(use_bias), static(use_recurrent_bias), static(use_multiplicative_bias))
 end
 
 function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
-    # weights
     weight_ih = multi_inits(
         rng, lstm.init_weight, lstm.out_dims, (lstm.out_dims, lstm.in_dims))
     weight_hh = init_rnn_weight(
@@ -183,15 +191,17 @@ function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
     weight_mh = multi_inits(
         rng, lstm.init_multiplicative_weight, lstm.out_dims, (lstm.out_dims, lstm.out_dims))
     ps = (; weight_ih, weight_hh, weight_mh)
-    # biases
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(lstm)
         bias_hh = init_rnn_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
+        ps = merge(ps, (; bias_hh))
+    elseif has_multiplicative_bias(lstm)
         bias_mh = multi_bias(
             rng, lstm.init_multiplicative_bias, lstm.out_dims, lstm.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh, bias_mh))
+        ps = merge(ps, (; bias_mh))
     end
-    # trainable state and/or memory
     has_train_state(lstm) &&
         (ps = merge(ps, (hidden_state=lstm.init_state(rng, lstm.out_dims),)))
     known(lstm.train_memory) &&
@@ -205,10 +215,10 @@ function parameterlength(lstm::MultiplicativeLSTMCell)
 end
 
 function (lstm::MultiplicativeLSTMCell)(
-        (inp,
-            (state, c_state))::Tuple{
-            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp,
+        (state, c_state))::Tuple{
+        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         lstm, ps, st, inp, state, c_state)

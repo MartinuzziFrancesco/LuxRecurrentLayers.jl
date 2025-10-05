@@ -1,23 +1,23 @@
 #https://arxiv.org/pdf/1803.10225
 @doc raw"""
     LiGRUCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
-    
+
 [Light gated recurrent unit](https://arxiv.org/pdf/1803.10225).
 
 ## Equations
 ```math
 \begin{aligned}
-    \mathbf{z}(t) &= \sigma\left( 
-        \mathbf{W}_{ih}^{z} \mathbf{x}(t) + \mathbf{b}_{ih}^{z} + 
+    \mathbf{z}(t) &= \sigma\left(
+        \mathbf{W}_{ih}^{z} \mathbf{x}(t) + \mathbf{b}_{ih}^{z} +
         \mathbf{W}_{hh}^{z} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{z} \right), \\
-    \tilde{\mathbf{h}}(t) &= \text{ReLU}\left( 
-        \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} + 
+    \tilde{\mathbf{h}}(t) &= \text{ReLU}\left(
+        \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} +
         \mathbf{W}_{hh}^{h} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{h} \right), \\
-    \mathbf{h}(t) &= \mathbf{z}(t) \circ \mathbf{h}(t-1) + 
+    \mathbf{h}(t) &= \mathbf{z}(t) \circ \mathbf{h}(t-1) +
         \left(1 - \mathbf{z}(t)\right) \circ \tilde{\mathbf{h}}(t)
 \end{aligned}
 ```
@@ -29,29 +29,32 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{h}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{h}$.
     Must be a tuple of 2 functions. If a single function is passed, it is
     expanded to 2 copies. If set to `nothing`, each bias is initialized from a
     uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases  
-    $\mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{h}$.  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{h}$.
     Must be a tuple of 2 functions. If a single function is passed, it is
     expanded to 2 copies. If set to `nothing`, each bias is initialized from a
     uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{h}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{h}$.
     Must be a tuple of 2 functions. If a single function is passed, it is
     expanded to 2 copies. If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights  
-    $\mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{h}$.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{h}$.
     Must be a tuple of 2 functions. If a single function is passed, it is
     expanded to 2 copies. If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where
@@ -80,21 +83,21 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weights  
-    ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{h} \}``  
-    The functions from `init_weight` are applied in order:  
+  - `weight_ih`: Input-to-hidden weights
+    ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{h} \}``
+    The functions from `init_weight` are applied in order:
     the first initializes $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{h}$.
-  - `weight_hh`: Hidden-to-hidden weights  
-    ``\{ \mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{h} \}``  
-    The functions from `init_recurrent_weight` are applied in order:  
+  - `weight_hh`: Hidden-to-hidden weights
+    ``\{ \mathbf{W}_{hh}^{z}, \mathbf{W}_{hh}^{h} \}``
+    The functions from `init_recurrent_weight` are applied in order:
     the first initializes $\mathbf{W}_{hh}^{z}$, the second $\mathbf{W}_{hh}^{h}$.
-  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{h} \}``  
-    The functions from `init_bias` are applied in order:  
+  - `bias_ih`: Input-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{h} \}``
+    The functions from `init_bias` are applied in order:
     the first initializes $\mathbf{b}_{ih}^{z}$, the second $\mathbf{b}_{ih}^{h}$.
-  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)  
-    ``\{ \mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{h} \}``  
-    The functions from `init_recurrent_bias` are applied in order:  
+  - `bias_hh`: Hidden-to-hidden biases (if `use_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{z}, \mathbf{b}_{hh}^{h} \}``
+    The functions from `init_recurrent_bias` are applied in order:
     the first initializes $\mathbf{b}_{hh}^{z}$, the second $\mathbf{b}_{hh}^{h}$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
@@ -103,7 +106,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct LiGRUCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct LiGRUCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -114,13 +117,15 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function LiGRUCell(
-        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
+    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+    train_state::BoolType=False(), init_bias=nothing,
+    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+    init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -129,7 +134,7 @@ function LiGRUCell(
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return LiGRUCell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 initialparameters(rng::AbstractRNG, ligru::LiGRUCell) = multi_initialparameters(rng, ligru)
@@ -142,8 +147,8 @@ function parameterlength(ligru::LiGRUCell)
 end
 
 function (ligru::LiGRUCell)(
-        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
-        ps, st::NamedTuple)
+    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
+    ps, st::NamedTuple)
     #type match
     matched_inp, matched_state = match_eltype(ligru, ps, st, inp, state)
     #get bias
