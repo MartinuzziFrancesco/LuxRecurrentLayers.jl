@@ -204,7 +204,8 @@ function WMCLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_memory_bias = ntuple(Returns(init_memory_bias), 3))
     return WMCLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_memory_bias, init_weight, init_recurrent_weight,
-        init_memory_weight, init_state, init_memory, static(use_bias))
+        init_memory_weight, init_state, init_memory, static(use_bias),
+        static(use_recurrent_bias), static(use_memory_bias))
 end
 
 function initialparameters(rng::AbstractRNG, lstm::WMCLSTMCell)

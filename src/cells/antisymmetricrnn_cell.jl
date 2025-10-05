@@ -1,7 +1,8 @@
 #https://arxiv.org/abs/1902.09689
 @doc raw"""
     AntisymmetricRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         epsilon=1.0, gamma=0.0)
@@ -29,6 +30,8 @@
 # Keyword arguments
 
   - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
@@ -146,7 +149,8 @@ end
 
 @doc raw"""
     GatedAntisymmetricRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         epsilon=1.0, gamma=0.0)
@@ -178,8 +182,9 @@ end
 
 # Keyword arguments
 
-
   - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
@@ -259,13 +264,14 @@ end
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
     epsilon
     gamma
 end
 
 function GatedAntisymmetricRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
-        use_bias::BoolType=True(), train_state::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         epsilon=1.0f0, gamma=0.0f0)
@@ -273,7 +279,7 @@ function GatedAntisymmetricRNNCell(
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return GatedAntisymmetricRNNCell(static(train_state), activation, in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        static(use_bias), epsilon, gamma)
+        static(use_bias), static(use_recurrent_bias), epsilon, gamma)
 end
 
 function initialparameters(rng::AbstractRNG, asymrnn::GatedAntisymmetricRNNCell)
@@ -284,9 +290,11 @@ function initialparameters(rng::AbstractRNG, asymrnn::GatedAntisymmetricRNNCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(asymrnn)
         bias_ih = multi_bias(rng, asymrnn.init_bias, asymrnn.out_dims, asymrnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(asymrnn)
         bias_hh = init_rnn_bias(
             rng, asymrnn.init_recurrent_bias, asymrnn.out_dims, asymrnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(asymrnn) &&
         (ps = merge(ps, (hidden_state=asymrnn.init_state(rng, asymrnn.out_dims),)))

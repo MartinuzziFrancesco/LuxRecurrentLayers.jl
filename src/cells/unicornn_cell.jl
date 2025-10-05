@@ -126,7 +126,8 @@
 end
 
 function UnICORNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_control_weight=nothing, init_recurrent_bias=nothing,
         init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, alpha::Number=0.0f0)
@@ -148,7 +149,7 @@ function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
         bias_ih = init_rnn_bias(
             rng, unicornn.init_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_bias(unicornn)
+    elseif has_recurrent_bias(unicornn)
         bias_hh = init_rnn_bias(
             rng, unicornn.init_recurrent_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_hh))
