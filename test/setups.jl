@@ -51,7 +51,8 @@ const RECURRENT_CELLS = [
         [:use_bias, :use_recurrent_bias, :use_memory_bias, :train_state, :train_memory]),
     (:MultiplicativeLSTMCell,
         (; kwargs...) -> MultiplicativeLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :use_recurrent_bias, :use_multiplicative_bias, :train_state, :train_memory]),
+        [:use_bias, :use_recurrent_bias,
+            :use_multiplicative_bias, :train_state, :train_memory]),
     (:MUT1Cell,
         (; kwargs...) -> MUT1Cell(3 => 5; kwargs...),
         [:use_bias, :use_recurrent_bias, :train_state]),
@@ -75,13 +76,13 @@ const RECURRENT_CELLS = [
         [:use_bias, :use_recurrent_bias, :train_state, :train_memory]),
     (:SCRNCell,
         (; kwargs...) -> SCRNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state, :train_memory]),
+        [:use_bias, :use_recurrent_bias, :use_context_bias, :train_state, :train_memory]),
     (:SGRNCell,
         (; kwargs...) -> SGRNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :use_recurrent_bias, :train_state]),
     (:STARCell,
         (; kwargs...) -> STARCell(3 => 5; kwargs...),
-        [:use_bias, :train_state]),
+        [:use_bias, :use_recurrent_bias, :train_state]),
     #    (:TGRUCell,
     #        (; kwargs...) -> TGRUCell(3 => 5; kwargs...),
     #        [:use_bias, :train_state]),
@@ -93,10 +94,10 @@ const RECURRENT_CELLS = [
         [:use_bias, :train_state]),
     (:UnICORNNCell,
         (; kwargs...) -> UnICORNNCell(3 => 5; kwargs...),
-        [:use_bias, :train_state, :train_memory]),
+        [:use_bias, :use_recurrent_bias, :train_state, :train_memory]),
     (:WMCLSTMCell,
         (; kwargs...) -> WMCLSTMCell(3 => 5; kwargs...),
-        [:use_bias, :train_state, :train_memory])
+        [:use_bias, :use_recurrent_bias, :use_memory_bias, :train_state, :train_memory])
 ]
 
 function format_knobs(kw::AbstractDict)
@@ -133,7 +134,7 @@ import Reexport: @reexport
 @reexport using LuxTestUtils, Lux
 
 using MLDataDevices, LuxCUDA, StableRNGs,
-    LinearAlgebra, JET
+      LinearAlgebra, JET
 
 if !@isdefined(BACKEND_GROUP)
     const BACKEND_GROUP = lowercase(get(ENV, "BACKEND_GROUP", "all"))
@@ -193,14 +194,14 @@ function maybe_rewrite_to_crosscor(mode, model)
 end
 
 export BACKEND_GROUP,
-    MODES,
-    cpu_testing,
-    cuda_testing,
-    amdgpu_testing,
-    get_default_rng,
-    StableRNG,
-    maybe_rewrite_to_crosscor,
-    check_approx,
-    allow_unstable
+       MODES,
+       cpu_testing,
+       cuda_testing,
+       amdgpu_testing,
+       get_default_rng,
+       StableRNG,
+       maybe_rewrite_to_crosscor,
+       check_approx,
+       allow_unstable
 
 end

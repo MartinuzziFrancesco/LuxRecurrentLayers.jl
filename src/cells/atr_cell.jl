@@ -90,7 +90,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct ATRCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct ATRCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -103,10 +103,10 @@
     use_recurrent_bias <: StaticBool
 end
 
-function ATRCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
-    train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
-    init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
+function ATRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
     return ATRCell(static(train_state), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
         static(use_bias), static(use_recurrent_bias))
@@ -126,8 +126,8 @@ end
 statelength(::ATRCell) = 1
 
 function (atr::ATRCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(atr, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

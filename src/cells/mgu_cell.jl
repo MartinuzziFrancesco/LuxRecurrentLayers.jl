@@ -106,7 +106,7 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct MGUCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct MGUCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -121,10 +121,11 @@
 end
 
 function MGUCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -144,8 +145,8 @@ function parameterlength(mgu::MGUCell)
 end
 
 function (mgu::MGUCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(mgu, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

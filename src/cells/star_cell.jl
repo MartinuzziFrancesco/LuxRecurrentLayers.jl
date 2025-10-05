@@ -1,7 +1,7 @@
 #https://arxiv.org/abs/1911.11033
 @doc raw"""
     STARCell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -30,40 +30,43 @@
 # Keyword arguments
 
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
-  - `train_state`: Flag to set the initial hidden state as trainable.  
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
-  - `train_memory`: Flag to set the initial memory state as trainable.  
+  - `train_memory`: Flag to set the initial memory state as trainable.
     Default set to `false`.
-  - `init_bias`: Initializer for input-to-hidden biases  
-    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{k}$.  
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{k}$.
     Must be a tuple containing 2 functions. If a single value is passed, it is
     copied into a 2-element tuple. If set to `nothing`, biases are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{b}_{ih}^{z}$, the second $\mathbf{b}_{ih}^{k}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order: the first initializes
+    $\mathbf{b}_{ih}^{z}$, the second $\mathbf{b}_{ih}^{k}$.
     Default set to `nothing`.
-  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias  
-    $\mathbf{b}_{hh}^{k}$.  
-    Must be a single function. If set to `nothing`, bias is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden bias
+    $\mathbf{b}_{hh}^{k}$.
+    Must be a single function. If set to `nothing`, bias is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
-  - `init_weight`: Initializer for input-to-hidden weights  
-    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{k}$.  
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{k}$.
     Must be a tuple containing 2 functions. If a single value is passed, it is
     copied into a 2-element tuple. If set to `nothing`, weights are initialized
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
-    The functions are applied in order: the first initializes  
-    $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{k}$.  
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
+    The functions are applied in order: the first initializes
+    $\mathbf{W}_{ih}^{z}$, the second $\mathbf{W}_{ih}^{k}$.
     Default set to `nothing`.
-  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight  
-    $\mathbf{W}_{hh}^{k}$.  
-    Must be a single function. If set to `nothing`, weight is initialized  
-    from a uniform distribution within `[-bound, bound]`,  
-    where `bound = inv(sqrt(out_dims))`.  
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weight
+    $\mathbf{W}_{hh}^{k}$.
+    Must be a single function. If set to `nothing`, weight is initialized
+    from a uniform distribution within `[-bound, bound]`,
+    where `bound = inv(sqrt(out_dims))`.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
@@ -90,13 +93,13 @@
 
 ## Parameters
 
-  - `weight_ih`: Input-to-hidden weights  
+  - `weight_ih`: Input-to-hidden weights
     ``\{ \mathbf{W}_{ih}^{z}, \mathbf{W}_{ih}^{k} \}``
-  - `weight_hh`: Hidden-to-hidden weights  
+  - `weight_hh`: Hidden-to-hidden weights
     ``\{ \mathbf{W}_{hh}^{k} \}``
-  - `bias_ih`: Input-to-hidden biases (not present if `use_bias=false`)  
+  - `bias_ih`: Input-to-hidden biases (not present if `use_bias=false`)
     ``\{ \mathbf{b}_{ih}^{z}, \mathbf{b}_{ih}^{k} \}``
-  - `bias_hh`: Hidden-to-hidden bias (not present if `use_bias=false`)  
+  - `bias_hh`: Hidden-to-hidden bias (not present if `use_bias=false`)
     ``\{ \mathbf{b}_{hh}^{k} \}``
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
@@ -115,17 +118,18 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function STARCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return STARCell(static(train_state), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        static(use_bias))
+        static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, star::STARCell)
@@ -136,8 +140,10 @@ function initialparameters(rng::AbstractRNG, star::STARCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(star)
         bias_ih = multi_bias(rng, star.init_bias, star.out_dims, star.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(star)
         bias_hh = init_rnn_bias(rng, star.init_recurrent_bias, star.out_dims, star.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(star) &&
         (ps = merge(ps, (hidden_state=star.init_state(rng, star.out_dims),)))

@@ -102,7 +102,7 @@ Light recurrent unit.
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct LightRUCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct LightRUCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     in_dims <: IntegerType
     out_dims <: IntegerType
@@ -117,10 +117,11 @@ Light recurrent unit.
 end
 
 function LightRUCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
-    init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_state=zeros32)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return LightRUCell(
@@ -155,8 +156,8 @@ function parameterlength(lightru::LightRUCell)
 end
 
 function (lightru::LightRUCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(lightru, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

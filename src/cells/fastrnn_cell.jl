@@ -90,7 +90,7 @@
 
   - `rng`: Controls the randomness (if any) in the initial state generation
 """
-@concrete struct FastRNNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct FastRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     activation
     in_dims <: IntegerType
@@ -107,11 +107,11 @@
 end
 
 function FastRNNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-    init_recurrent_weight=nothing, init_state=zeros32,
-    init_alpha=-3.0f0, init_beta=3.0f0)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32,
+        init_alpha=-3.0f0, init_beta=3.0f0)
     return FastRNNCell(static(train_state), activation, in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
         init_state, init_alpha, init_beta, static(use_bias), static(use_recurrent_bias))
@@ -131,8 +131,8 @@ function parameterlength(fastrnn::FastRNNCell)
 end
 
 function (fastrnn::FastRNNCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(fastrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -259,7 +259,7 @@ end
 
   - `rng`: Controls the randomness (if any) in the initial state generation
 """
-@concrete struct FastGRNNCell{TS<:StaticBool} <: AbstractSingleRecurrentCell{TS}
+@concrete struct FastGRNNCell{TS <: StaticBool} <: AbstractSingleRecurrentCell{TS}
     train_state::TS
     activation
     in_dims <: IntegerType
@@ -276,11 +276,11 @@ end
 end
 
 function FastGRNNCell(
-    (in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType}, activation=tanh_fast;
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-    init_recurrent_weight=nothing, init_state=zeros32, init_zeta=1.0f0,
-    init_nu=-4.0f0)
+        (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32, init_zeta=1.0f0,
+        init_nu=-4.0f0)
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
@@ -317,8 +317,8 @@ function parameterlength(fastrnn::FastGRNNCell)
 end
 
 function (fastrnn::FastGRNNCell)(
-    (inp, (state,))::Tuple{<:AbstractMatrix,Tuple{<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(fastrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_ihs = bias_safe_multigate(bias_ih, Val(2))

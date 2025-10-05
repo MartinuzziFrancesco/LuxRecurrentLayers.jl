@@ -146,8 +146,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct NASCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct NASCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -162,11 +162,12 @@
     use_recurrent_bias <: StaticBool
 end
 
-function NASCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_recurrent_bias=nothing,
-    init_state=zeros32, init_memory=zeros32)
+function NASCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing,
+        init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{8} || (init_weight = ntuple(Returns(init_weight), 8))
     init_recurrent_weight isa NTuple{8} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 8))
@@ -188,10 +189,10 @@ function parameterlength(nas::NASCell)
 end
 
 function (nas::NASCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         nas, ps, st, inp, state, c_state)

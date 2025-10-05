@@ -1,7 +1,8 @@
 #https://arxiv.org/pdf/1705.07393
 @doc raw"""
     RANCell(in_dims => out_dims;
-        use_bias=true, use_recurrent_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32)
@@ -126,8 +127,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct RANCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct RANCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -142,10 +143,11 @@
     use_recurrent_bias <: StaticBool
 end
 
-function RANCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-    init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
+function RANCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
@@ -167,10 +169,10 @@ function parameterlength(ran::RANCell)
 end
 
 function (ran::RANCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     #type match
     matched_inp, matched_state, matched_cstate = match_eltype(
         ran, ps, st, inp, state, c_state)

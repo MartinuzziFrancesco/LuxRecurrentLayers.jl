@@ -143,8 +143,8 @@
   - `rng`: Controls the randomness (if any) in the initial state generation
 
 """
-@concrete struct LEMCell{TS<:StaticBool,TM<:StaticBool} <:
-                 AbstractDoubleRecurrentCell{TS,TM}
+@concrete struct LEMCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
     train_state::TS
     train_memory::TM
     in_dims <: IntegerType
@@ -163,12 +163,12 @@
     dt
 end
 
-function LEMCell((in_dims, out_dims)::Pair{<:IntegerType,<:IntegerType};
-    use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_cell_bias::BoolType=True(),
-    train_state::BoolType=False(), train_memory::BoolType=False(),
-    init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
-    init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-    init_state=zeros32, init_memory=zeros32, dt=1.0)
+function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_cell_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
+        init_state=zeros32, init_memory=zeros32, dt=1.0)
     init_weight isa NTuple{4} ||
         (init_weight = ntuple(Returns(init_weight), 4))
     init_recurrent_weight isa NTuple{3} ||
@@ -213,10 +213,10 @@ function parameterlength(lem::LEMCell)
 end
 
 function (lem::LEMCell)(
-    (inp,
-        (state, c_state))::Tuple{
-        <:AbstractMatrix,Tuple{<:AbstractMatrix,<:AbstractMatrix}},
-    ps, st::NamedTuple)
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
     matched_inp, matched_state, matched_cstate = match_eltype(
         lem, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

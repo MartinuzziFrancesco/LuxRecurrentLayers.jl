@@ -1,7 +1,7 @@
 #https://doi.org/10.1049/gtd2.12056
 @doc raw"""
     SGRNCell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -28,7 +28,10 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden bias
@@ -106,15 +109,17 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function SGRNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     return SGRNCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 initialparameters(rng::AbstractRNG, sgrn::SGRNCell) = single_initialparameters(rng, sgrn)
@@ -127,16 +132,12 @@ end
 function (sgrn::SGRNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
-    #type match
     matched_inp, matched_state = match_eltype(sgrn, ps, st, inp, state)
-    #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    #computation
     t_ones = one(eltype(matched_inp))
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-
     forget_gate = @. sigmoid_fast(xs + hs)
     input_gate = @. t_ones - forget_gate
     new_state = @. tanh_fast(input_gate * xs + forget_gate * matched_state)
