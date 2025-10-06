@@ -40,23 +40,36 @@
     <h2>LuxRecurrentLayers.jl</h2>
 </div>
 
-> [!WARNING]  
-> Currently heavy work in progress, please check out
-> [RecurrentLayers.jl](https://github.com/MartinuzziFrancesco/RecurrentLayers.jl)
-> for a more polished recurrent layers library.
-
 LuxRecurrentLayers.jl extends [Lux.jl](https://github.com/LuxDL/Lux.jl)
 recurrent layers offering by providing implementations of additional
 recurrent layers not available in base deep learning libraries.
 
 ## Installation
 
-LuxRecurrentLayers.jl is not on the general registry yet! To install it please
-use:
+LuxRecurrentLayers.jl is registered on the general registry! To install it please
+use either of:
+
 ```julia_repl
 julia> ]
-Pkg> add https://github.com/MartinuzziFrancesco/LuxRecurrentLayers.jl
+Pkg> add LuxRecurrentLayers
 ```
+
+or
+
+```julia
+using Pkg
+Pkg.add("LuxRecurrentLayers")
+```
+
+## Features
+
+LuxRecurrentLayers aims to provide additional recurrent layers to use with Lux.jl. All the
+cells are easy drop-in replacements to any existing workflow in Lux!
+More specifically this library provides:
+ - 25+ additional cells that provide alternative computation to the default `RNNCell`, `GRUCell`,
+   `LSTMCell`.
+ - Additional toggles and options per cell.
+ - Additional more complex layers and wrappers.
 
 ## Quick Example
 
