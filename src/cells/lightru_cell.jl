@@ -1,7 +1,7 @@
 #https://www.mdpi.com/2079-9292/13/16/3204
 @doc raw"""
     LightRUCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
 
@@ -27,7 +27,10 @@ Light recurrent unit.
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -110,18 +113,20 @@ Light recurrent unit.
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function LightRUCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     return LightRUCell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, lightru::LightRUCell)
@@ -132,9 +137,11 @@ function initialparameters(rng::AbstractRNG, lightru::LightRUCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(lightru)
         bias_ih = multi_bias(rng, lightru.init_bias, lightru.out_dims, lightru.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(lightru)
         bias_hh = init_rnn_bias(
             rng, lightru.init_recurrent_bias, lightru.out_dims, lightru.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(lightru) &&
         (ps = merge(ps, (hidden_state=lightru.init_state(rng, lightru.out_dims),)))

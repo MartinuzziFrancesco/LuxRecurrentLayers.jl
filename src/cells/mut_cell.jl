@@ -1,7 +1,7 @@
 #https://proceedings.mlr.press/v37/jozefowicz15.pdf
 @doc raw"""
     MUT1Cell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -30,7 +30,10 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -113,11 +116,13 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function MUT1Cell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
@@ -128,7 +133,7 @@ function MUT1Cell(
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return MUT1Cell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 initialparameters(rng::AbstractRNG, mut::MUT1Cell) = multi_initialparameters(rng, mut)
@@ -168,7 +173,7 @@ end
 
 @doc raw"""
     MUT2Cell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -200,7 +205,10 @@ end
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -285,11 +293,13 @@ end
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function MUT2Cell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
@@ -300,7 +310,7 @@ function MUT2Cell(
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return MUT2Cell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 initialparameters(rng::AbstractRNG, mut::MUT2Cell) = multi_initialparameters(rng, mut)
@@ -340,7 +350,7 @@ end
 
 @doc raw"""
     MUT3Cell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
@@ -370,7 +380,10 @@ end
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -453,11 +466,13 @@ end
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function MUT3Cell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
@@ -468,7 +483,7 @@ function MUT3Cell(
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return MUT3Cell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 initialparameters(rng::AbstractRNG, mut::MUT3Cell) = multi_initialparameters(rng, mut)

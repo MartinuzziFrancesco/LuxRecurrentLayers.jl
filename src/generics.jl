@@ -1,6 +1,20 @@
 abstract type AbstractSingleRecurrentCell{TS} <: AbstractRecurrentCell end
 abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
 
+# from lux extendend ops
+for (op, field) in (
+    :recurrent_bias => :use_recurrent_bias,
+    :cell_bias => :use_cell_bias,
+    :memory_bias => :use_memory_bias,
+    :peephole_bias => :use_peephole_bias,
+    :context_bias => :use_context_bias
+)
+    @eval function $(Symbol(:has_, op))(l::AbstractLuxLayer)
+        res = known(safe_getproperty(l, Val($(Meta.quot(field)))))
+        return ifelse(res === nothing, false, res)
+    end
+end
+
 function multi_inits(rng::AbstractRNG, inits, args...)
     weights = vcat(
         [init_rnn_weight(rng, init, args...)
@@ -81,9 +95,11 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrentC
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -98,9 +114,11 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractDoubleRecurrentC
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -118,8 +136,10 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     ps = (; weight_ih, weight_hh)
     if has_bias(rnn)
         bias_ih = init_rnn_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(rnn)
         bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))

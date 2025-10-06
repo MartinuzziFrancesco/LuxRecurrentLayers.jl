@@ -153,7 +153,8 @@ end
 #https://arxiv.org/abs/2109.00020
 @doc raw"""
     TGRUCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32)
@@ -184,7 +185,10 @@ end
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
@@ -289,10 +293,12 @@ end
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function TGRUCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_recurrent_bias=nothing,
         init_state=zeros32, init_memory=zeros32)
@@ -304,7 +310,7 @@ function TGRUCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return TGRUCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_memory, static(use_bias))
+        init_state, init_memory, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, tgru::TGRUCell)
@@ -352,7 +358,8 @@ end
 #https://arxiv.org/abs/2109.00020
 @doc raw"""
     TLSTMCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32)
@@ -382,7 +389,10 @@ end
 
 ## Keyword Arguments
 
-- `use_bias`: Flag to use bias in the computation. Default set to `true`.
+- `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+  Default set to `true`.
+- `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+  Default set to `true`.
 - `train_state`: Flag to set the initial hidden state as trainable.
   Default set to `false`.
 - `train_memory`: Flag to set the initial memory state as trainable.
@@ -494,10 +504,12 @@ end
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function TLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
@@ -508,7 +520,7 @@ function TLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return TLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_memory, static(use_bias))
+        init_state, init_memory, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, lstm::TLSTMCell)
@@ -519,9 +531,11 @@ function initialparameters(rng::AbstractRNG, lstm::TLSTMCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(lstm)
         bias_hh = multi_bias(
             rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(lstm) &&
         (ps = merge(ps, (hidden_state=lstm.init_state(rng, lstm.out_dims),)))

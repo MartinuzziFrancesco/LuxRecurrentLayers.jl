@@ -1,7 +1,7 @@
 #https://arxiv.org/pdf/1803.04831
 @doc raw"""
     IndRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
 
@@ -23,7 +23,10 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
@@ -87,16 +90,18 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function IndRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(), init_bias=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
     return IndRNNCell(
         static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias))
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, indrnn::IndRNNCell)
@@ -107,9 +112,11 @@ function initialparameters(rng::AbstractRNG, indrnn::IndRNNCell)
     ps = (; weight_ih, weight_hh)
     if has_bias(indrnn)
         bias_ih = init_rnn_bias(rng, indrnn.init_bias, indrnn.out_dims, indrnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(indrnn)
         bias_hh = init_rnn_bias(
             rng, indrnn.init_recurrent_bias, indrnn.out_dims, indrnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
     has_train_state(indrnn) &&
         (ps = merge(ps, (hidden_state=indrnn.init_state(rng, indrnn.out_dims),)))

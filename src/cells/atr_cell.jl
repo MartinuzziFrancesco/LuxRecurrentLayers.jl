@@ -1,9 +1,9 @@
 #https://arxiv.org/abs/1810.12546
 @doc raw"""
     ATRCell(in_dims => out_dims;
-        use_bias=true, train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32)
+        use_bias=true, use_recurrent bias=true, train_state=false,
+        init_bias=nothing, init_recurrent_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
 
 [Addition-subtraction twin-gated recurrent cell](https://arxiv.org/abs/1810.12546).
 
@@ -28,7 +28,10 @@
 # Keyword arguments
 
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
@@ -97,15 +100,16 @@
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function ATRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32)
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
     return ATRCell(static(train_state), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        static(use_bias))
+        static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, atr::ATRCell)

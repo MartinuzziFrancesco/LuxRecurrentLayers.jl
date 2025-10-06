@@ -1,7 +1,8 @@
 #https://arxiv.org/abs/1711.06788
 @doc raw"""
     MinimalRNNCell(in_dims => out_dims;
-        use_bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, use_memory_bias=true,
+        train_state=false,
         init_encoder_bias=nothing, init_recurrent_bias=nothing,
         init_memory_bias=nothing, init_encoder_weight=nothing,
         init_recurrent_weight=nothing, init_memory_weight=nothing,
@@ -29,7 +30,12 @@
 
 ## Keyword arguments
 
-  - `use_bias`: Set to false to deactivate bias
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `use_memory_bias`: Flag to use recurrent bias $\mathbf{b}_{zh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Trainable initial hidden state can be activated by setting this to `true`
   - `train_memory`: Trainable initial memory can be activated by setting this to `true`
   - `init_encoder_bias`: Initializer for encoder bias $\mathbf{b}_{ih}^{z}$.
@@ -120,18 +126,21 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
+    use_memory_bias <: StaticBool
 end
 
 function MinimalRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_memory_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_encoder_bias=nothing, init_recurrent_bias=nothing, init_memory_bias=nothing,
         init_encoder_weight=nothing, init_recurrent_weight=nothing,
         init_memory_weight=nothing, init_state=zeros32, init_memory=zeros32)
     return MinimalRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_encoder_bias, init_recurrent_bias, init_memory_bias, init_encoder_weight,
         init_recurrent_weight, init_memory_weight, init_state, init_memory,
-        static(use_bias))
+        static(use_bias), static(use_recurrent_bias), static(use_memory_bias))
 end
 
 function initialparameters(rng::AbstractRNG, minimal::MinimalRNNCell)
@@ -145,11 +154,15 @@ function initialparameters(rng::AbstractRNG, minimal::MinimalRNNCell)
     if has_bias(minimal)
         bias_ih = init_rnn_bias(
             rng, minimal.init_encoder_bias, minimal.out_dims, minimal.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(minimal)
         bias_hh = init_rnn_bias(
             rng, minimal.init_recurrent_bias, minimal.out_dims, minimal.out_dims)
+        ps = merge(ps, (; bias_hh))
+    elseif has_memory_bias(minimal)
         bias_mm = init_rnn_bias(
             rng, minimal.init_memory_bias, minimal.out_dims, minimal.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh, bias_mm))
+        ps = merge(ps, (; bias_mm))
     end
     has_train_state(minimal) &&
         (ps = merge(ps, (hidden_state=minimal.init_state(rng, minimal.out_dims),)))

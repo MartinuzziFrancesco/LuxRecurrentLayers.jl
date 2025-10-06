@@ -3,7 +3,8 @@ module LuxRecurrentLayers
 using Compat: @compat
 using ConcreteStructs: @concrete
 using LinearAlgebra: transpose, I
-using Lux: Utils, init_rnn_hidden_state, init_trainable_rnn_hidden_state, match_eltype,
+using Lux: AbstractLuxLayer, Utils, init_rnn_hidden_state, init_trainable_rnn_hidden_state,
+           match_eltype,
            safe_getproperty, bias_activation, fused_dense_bias_activation,
            AbstractRecurrentCell, zeros32, has_bias,
            has_train_state, init_rnn_weight,

@@ -1,7 +1,7 @@
 #https://arxiv.org/abs/1804.04849
 @doc raw"""
     JANETCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false, train_memory=false,
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32, beta=1.0)
 
@@ -28,7 +28,10 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable. Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable. Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -131,11 +134,13 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
     beta
 end
 
 function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         init_memory=zeros32, beta::Number=1.0f0)
@@ -147,7 +152,7 @@ function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return JANETCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        init_memory, static(use_bias), beta)
+        init_memory, static(use_bias), static(use_recurrent_bias), beta)
 end
 
 initialparameters(rng::AbstractRNG, janet::JANETCell) = multi_initialparameters(rng, janet)

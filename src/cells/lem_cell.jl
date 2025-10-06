@@ -2,7 +2,8 @@
 
 @doc raw"""
     LEMCell(in_dims => out_dims;
-        use_bias=true, train_state=false, train_memory=false,
+        use_bias=true, use_recurrent_bias=true, use_cell_bias = true,
+        train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32, dt=1.0)
@@ -36,7 +37,12 @@
 
 ## Keyword Arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `use_cell_bias`: Flag to use cell bias $\mathbf{b}_{ch}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
@@ -152,11 +158,14 @@
     init_state
     init_memory
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
+    use_cell_bias <: StaticBool
     dt
 end
 
 function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_cell_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
         init_state=zeros32, init_memory=zeros32, dt=1.0)
@@ -169,11 +178,11 @@ function LEMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
     return LEMCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight, init_recurrent_weight,
-        init_cell_weight, init_state, init_memory, static(use_bias), dt)
+        init_cell_weight, init_state, init_memory, static(use_bias),
+        static(use_recurrent_bias), static(use_cell_bias), dt)
 end
 
 function initialparameters(rng::AbstractRNG, lem::LEMCell)
-    # weights
     weight_ih = multi_inits(
         rng, lem.init_weight, lem.out_dims, (lem.out_dims, lem.in_dims))
     weight_hh = multi_inits(
@@ -181,14 +190,16 @@ function initialparameters(rng::AbstractRNG, lem::LEMCell)
     weight_ch = init_rnn_weight(
         rng, lem.init_cell_weight, lem.out_dims, (lem.out_dims, lem.out_dims))
     ps = (; weight_ih, weight_hh, weight_ch)
-    # biases
     if has_bias(lem)
         bias_ih = multi_bias(rng, lem.init_bias, lem.out_dims, lem.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(lem)
         bias_hh = multi_bias(rng, lem.init_recurrent_bias, lem.out_dims, lem.out_dims)
+        ps = merge(ps, (; bias_hh))
+    elseif has_cell_bias(lem)
         bias_ch = init_rnn_bias(rng, lem.init_cell_bias, lem.out_dims, lem.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh, bias_ch))
+        ps = merge(ps, (; bias_ch))
     end
-    # trainable state and/or memory
     has_train_state(lem) &&
         (ps = merge(ps, (hidden_state=lem.init_state(rng, lem.out_dims),)))
     known(lem.train_memory) &&

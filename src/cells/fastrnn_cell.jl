@@ -1,7 +1,8 @@
 #https://arxiv.org/abs/1901.02358
 @doc raw"""
     FastRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true,
+        train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         init_alpha=-3.0, init_beta=3.0)
@@ -28,7 +29,10 @@
 
 # Keyword arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
@@ -99,17 +103,18 @@
     init_alpha
     init_beta
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function FastRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         init_alpha=-3.0f0, init_beta=3.0f0)
     return FastRNNCell(static(train_state), activation, in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_alpha, init_beta, static(use_bias))
+        init_state, init_alpha, init_beta, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
@@ -150,7 +155,7 @@ end
 
 @doc raw"""
     FastGRNNCell(input_size => hidden_size, [activation];
-        use_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
         init_zeta=1.0, init_nu=4.0)
@@ -182,7 +187,10 @@ end
 
 # Keyword arguments
 
-  - `use_bias`: Flag to use bias in the computation. Default set to `true`.
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -264,11 +272,12 @@ end
     init_zeta
     init_nu
     use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
 end
 
 function FastGRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), train_state::BoolType=False(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32, init_zeta=1.0f0,
         init_nu=-4.0f0)
@@ -277,27 +286,25 @@ function FastGRNNCell(
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return FastGRNNCell(static(train_state), activation, in_dims, out_dims,
         init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_zeta, init_nu, static(use_bias))
+        init_state, init_zeta, init_nu, static(use_bias), static(use_recurrent_bias))
 end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
-    #matrices
     weight_ih = init_rnn_weight(
         rng, fastrnn.init_weight, fastrnn.out_dims, (fastrnn.out_dims, fastrnn.in_dims))
     weight_hh = init_rnn_weight(
         rng, fastrnn.init_recurrent_weight, fastrnn.out_dims,
         (fastrnn.out_dims, fastrnn.out_dims))
     ps = (; weight_ih, weight_hh)
-    #biases
     if has_bias(fastrnn)
         bias_ih = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
+        ps = merge(ps, (; bias_ih))
+    elseif has_recurrent_bias(fastrnn)
         bias_hh = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
-        ps = merge(ps, (; bias_ih, bias_hh))
+        ps = merge(ps, (; bias_hh))
     end
-    # trainable state or memory
     has_train_state(fastrnn) &&
         (ps = merge(ps, (hidden_state=fastrnn.init_state(rng, fastrnn.out_dims),)))
-    # any additional trainable parameters
     zeta = fastrnn.init_zeta .* ones(1)
     nu = fastrnn.init_nu .* ones(1)
     ps = merge(ps, (; zeta, nu))
