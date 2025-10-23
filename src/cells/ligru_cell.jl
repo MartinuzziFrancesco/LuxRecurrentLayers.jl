@@ -113,28 +113,32 @@
     activation
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
+    integration_mode
 end
 
 function LiGRUCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
         use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
-        train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+        use_integration_bias::BoolType=False(), train_state::BoolType=False(), init_bias=nothing,
+        init_recurrent_bias=nothing, init_integration_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32, integration_mode=AdditiveIntegration())
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_integration_bias isa NTuple{2} ||
+        (init_integration_bias = ntuple(Returns(init_integration_bias), 2))
     return LiGRUCell(
-        static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
+        static(train_state), in_dims, out_dims, activation, init_bias, init_recurrent_bias, init_integration_bias,
+        init_weight, init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias), integration_mode)
 end
 
 initialparameters(rng::AbstractRNG, ligru::LiGRUCell) = multi_initialparameters(rng, ligru)
@@ -154,10 +158,11 @@ function (ligru::LiGRUCell)(
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     #computation
-    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
-    full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    gs = multigate(full_gxs .+ full_ghs, Val(2))
+    full_gs = recurrence_double_bias(ligru.integration_mode, ps.weight_ih, ps.weight_hh,
+        matched_inp, matched_state, bias_ih, bias_hh, bias_mi)
+    gs = multigate(full_gs, Val(2))
     forget_gate = @. sigmoid_fast(gs[1])
     candidate_hidden = @. tanh_fast(gs[2])
     new_state = @. forget_gate * state + (1 - forget_gate) * candidate_hidden
