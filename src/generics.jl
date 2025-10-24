@@ -150,8 +150,8 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
         bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
     elseif has_integration_bias(rnn)
-        bias_hh = init_rnn_bias(rng, rnn.init_integration_bias, rnn.out_dims, rnn.out_dims)
-        ps = merge(ps, (; bias_hh))
+        bias_mi = init_rnn_bias(rng, rnn.init_integration_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))

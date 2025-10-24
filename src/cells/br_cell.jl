@@ -1,9 +1,10 @@
 #https://doi.org/10.1371/journal.pone.0252676
 @doc raw"""
     BRCell(in_dims => out_dims;
-        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+        init_state=zeros32, integration_mode=AdditiveIntegration())
 
 [Bistable recurrent cell](https://doi.org/10.1371/journal.pone.0252676).
 
@@ -34,6 +35,9 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -45,6 +49,12 @@
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a
+    2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
+    uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into a
     2-element tuple (fn, fn). If set to `nothing`, weights are initialized from a
@@ -65,6 +75,8 @@
     a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -108,6 +120,8 @@
     The initializers in `init_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{hh}^z$, and the second for
     $\mathbf{b}_{hh}^c$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -121,27 +135,31 @@
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
+    integration_mode
 end
 
 function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
         train_state::BoolType=False(), init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32)
+        init_recurrent_bias=nothing, init_integration_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_state=zeros32, integration_mode=AdditiveIntegration())
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
     init_recurrent_bias isa NTuple{3} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
+    init_integration_bias isa NTuple{2} ||
+        (init_integration_bias = ntuple(Returns(init_integration_bias), 2))
     return BRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
-        init_weight, init_recurrent_weight, init_state, static(use_bias),
-        static(use_recurrent_bias))
+        init_integration_bias, init_weight, init_recurrent_weight, init_state, static(use_bias),
+        static(use_recurrent_bias), integration_mode)
 end
 
 function initialparameters(rng::AbstractRNG, br::BRCell)
@@ -156,6 +174,9 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
     elseif has_recurrent_bias(br)
         bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_hh))
+    elseif has_integration_bias(br)
+        bias_mi = init_rnn_bias(rng, br.init_integration_bias, br.out_dims, br.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(br) &&
         (ps = merge(ps, (hidden_state=br.init_state(rng, br.out_dims),)))
@@ -175,14 +196,17 @@ function (br::BRCell)(
     matched_inp, matched_state = match_eltype(br, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     t_ones = one(eltype(matched_inp))
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(full_xs, Val(3))
     ws = multigate(ps.weight_hh, Val(2))
     bhs = bias_safe_multigate(bias_hh, Val(3))
-    modulation_gate = t_ones .+
-                      bias_activation(tanh_fast, xs[1] .+ ws[1] .* matched_state, bhs[1])
-    candidate_state = bias_activation(sigmoid_fast, xs[2] .+ ws[2] .* matched_state, bhs[2])
+    bmis = bias_safe_multigate(bias_mi, Val(2))
+    wh_state_1 = fused_dense_bias_activation(identity, ws[1], matched_state, bhs[1])
+    wh_state_2 = fused_dense_bias_activation(identity, ws[2], matched_state, bhs[2])
+    modulation_gate = t_ones .+ dense_integration(br.integration_mode, xs[1], wh_state_1, bmis[1])
+    candidate_state = dense_integration(br.integration_mode, xs[2], wh_state_1, bmis[2]; activation=sigmoid_fast)
     new_state = candidate_state .* matched_state .+
                 (t_ones .- candidate_state) .*
                 bias_activation(
