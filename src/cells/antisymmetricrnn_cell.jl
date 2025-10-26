@@ -33,8 +33,6 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
-  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
-    Default set to `true`.
   - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
     This bias is only useful for multiplicative integration. Check the docs page on multiplicative
     integration for more details. Default set to `false`.

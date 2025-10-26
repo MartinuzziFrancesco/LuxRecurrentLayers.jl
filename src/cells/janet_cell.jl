@@ -1,9 +1,12 @@
 #https://arxiv.org/abs/1804.04849
 @doc raw"""
     JANETCell(in_dims => out_dims;
-        use_bias=true, use_recurrent_bias=true, train_state=false, train_memory=false,
-        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
-        init_state=zeros32, init_memory=zeros32, beta=1.0)
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, train_memory=false,
+        init_bias=nothing, init_recurrent_bias=nothing,
+        init_integration_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32, init_memory=zeros32,
+        beta=1.0, integration_mode=AdditiveIntegration())
 
 [Just another network unit](https://arxiv.org/abs/1804.04849).
 
@@ -32,6 +35,9 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable. Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable. Default set to `false`.
   - `init_bias`: Initializer for input-to-hidden biases
@@ -46,6 +52,9 @@
     If a single function `fn` is provided, it is expanded to `(fn, fn)`.
     If set to `nothing`, each bias is initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input-to-hidden weights
     $\mathbf{W}_{ih}^{f}$ and $\mathbf{W}_{ih}^{c}$.
     Must be a tuple of 2 functions, e.g., `(glorot_uniform, kaiming_uniform)`.
@@ -61,6 +70,8 @@
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
   - `beta`: Control parameter over the input data flow. Default is `1.0`.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -113,6 +124,8 @@
     The functions provided in `init_recurrent_bias` are applied in order:
     the first function initializes $\mathbf{b}_{hh}^{f}$, the second initializes
     $\mathbf{b}_{hh}^{c}$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
@@ -129,6 +142,7 @@
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -136,23 +150,26 @@
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
     beta
+    integration_mode
 end
 
 function JANETCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
         train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32,
-        init_memory=zeros32, beta::Number=1.0f0)
+        init_bias=nothing, init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_memory=zeros32, beta::Number=1.0f0, integration_mode=AdditiveIntegration())
     init_weight isa NTuple{2} || (init_weight = ntuple(Returns(init_weight), 2))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_integration_bias isa NTuple{2} ||
+        (init_integration_bias = ntuple(Returns(init_integration_bias), 2))
     return JANETCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        init_memory, static(use_bias), static(use_recurrent_bias), beta)
+        init_bias, init_recurrent_bias, init_integration_bias, init_weight, init_recurrent_weight, init_state,
+        init_memory, static(use_bias), static(use_recurrent_bias), beta, integration_mode)
 end
 
 initialparameters(rng::AbstractRNG, janet::JANETCell) = multi_initialparameters(rng, janet)
@@ -166,15 +183,14 @@ function (janet::JANETCell)(
         janet, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
-    full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    gxs = multigate(full_gxs, Val(2))
-    ghs = multigate(full_ghs, Val(2))
-    linear_gate = gxs[1] .+ ghs[1]
-    candidate_state = @. tanh_fast(gxs[2] + ghs[2])
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
+    full_gs = recurrence_double_bias(janet.integration_mode, ps.weight_ih, ps.weight_hh,
+        matched_inp, matched_state, bias_ih, bias_hh, bias_mi)
+    gs = multigate(full_gs, Val(2))
+    candidate_state = tanh_fast.(gs[2])
     ones_vec = one(eltype(candidate_state))
-    new_cstate = @. sigmoid_fast(linear_gate) * c_state +
-                    (ones_vec - sigmoid_fast(linear_gate - janet.beta)) *
+    new_cstate = @. sigmoid_fast(gs[1]) * c_state +
+                    (ones_vec - sigmoid_fast(gs[1] - janet.beta)) *
                     candidate_state
     new_state = new_cstate
     return (new_state, (new_state, new_cstate)), st
