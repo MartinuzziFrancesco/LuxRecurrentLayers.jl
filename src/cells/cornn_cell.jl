@@ -2,11 +2,11 @@
 @doc raw"""
     coRNNCell(in_dims => out_dims;
         use_bias=true, use_recurrent_bias=true, use_cell_bias=true,
-        train_state=false, train_memory=false,
+        use_integration_bias=false, train_state=false, train_memory=false,
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing,
+        init_integration_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_cell_weight=nothing, init_state=zeros32, init_memory=zeros32,
-        gamma=0.0, epsilon=0.0, dt=1.0)
+        gamma=0.0, epsilon=0.0, dt=1.0, integration_mode=AdditiveIntegration()
 
 [Coupled oscillatory recurrent neural unit](https://arxiv.org/abs/2010.00951).
 
@@ -38,6 +38,9 @@
     Default set to `true`.
   - `use_cell_bias`: Flag to use cell bias $\mathbf{b}_{ch}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
@@ -54,6 +57,9 @@
     $\mathbf{b}_{ch}$. If set to `nothing`, weights are initialized from a
     uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input to hidden weight $\mathbf{W}_{ih}$.
     If set to `nothing`, weights are initialized from a uniform distribution
     within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
@@ -71,6 +77,8 @@
   - `dt`: time step. Default is 1.0.
   - `gamma`: Damping for state. Default is 0.0.
   - `epsilon`: Damping for candidate state. Default is 0.0.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -112,6 +120,8 @@
     $\mathbf{b}_{hh}$
   - `bias_ch`: Bias vector for the cell-hidden connection (not present if `use_bias=false`)
     $\mathbf{b}_{ch}$
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `memory`: Initial memory vector (not present if `train_memory=false`)
 
@@ -129,6 +139,7 @@
     init_bias
     init_recurrent_bias
     init_cell_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_cell_weight
@@ -140,18 +151,21 @@
     dt
     gamma
     epsilon
+    integration_mode
 end
 
 function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_cell_bias::BoolType=True(),
-        train_state::BoolType=False(), train_memory::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
+        use_integration_bias::BoolType=False(), train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing, init_integration_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0,
+        integration_mode=AdditiveIntegration())
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_cell_bias, init_weight,
+        init_bias, init_recurrent_bias, init_cell_bias, init_integration_bias, init_weight,
         init_recurrent_weight, init_cell_weight, init_state, init_memory,
-        static(use_bias), static(use_recurrent_bias), static(use_cell_bias), dt, gamma, epsilon)
+        static(use_bias), static(use_recurrent_bias), static(use_cell_bias), dt, gamma, epsilon,
+        integration_mode)
 end
 
 function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
@@ -172,6 +186,9 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
     elseif has_cell_bias(cornn)
         bias_ch = init_rnn_bias(rng, cornn.init_cell_bias, cornn.out_dims, cornn.out_dims)
         ps = merge(ps, (; bias_ch))
+    elseif has_integration_bias(cornn)
+        bias_mi = init_rnn_bias(rng, cornn.init_integration_bias, cornn.out_dims, cornn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(cornn) &&
         (ps = merge(ps, (hidden_state=cornn.init_state(rng, cornn.out_dims),)))
@@ -196,10 +213,12 @@ function (cornn::coRNNCell)(
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
+    int_proj = dense_integration(cornn.integration_mode, xs, hs, bias_mi)
     zs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)
-    pre_act = @. xs + hs + zs
+    pre_act = int_proj .+ zs
     new_cstate = @. c_state + dt * (tanh_fast(pre_act) - gamma * state - epsilon * c_state)
     new_state = @. state + dt * new_cstate
     return (new_state, (new_state, new_cstate)), st
