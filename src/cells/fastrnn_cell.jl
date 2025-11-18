@@ -1,11 +1,11 @@
 #https://arxiv.org/abs/1901.02358
 @doc raw"""
     FastRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, use_recurrent_bias=true,
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
         train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32,
-        init_alpha=-3.0, init_beta=3.0)
+        init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_alpha=-3.0, init_beta=3.0, integration_mode=AdditiveIntegration())
 
 [Fast recurrent neural network cell](https://arxiv.org/abs/1901.02358).
 
@@ -33,6 +33,9 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
@@ -42,6 +45,9 @@
     $\mathbf{b}_{hh}^z, \mathbf{b}_{hh}^h$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$.
+    If set to `nothing`, weights are initialized from a uniform distribution
+    within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for weight $\mathbf{W}_{ih}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
@@ -53,6 +59,8 @@
     Default is -3.0.
   - `init_beta`: initializer for the $\beta$ learnable parameter.
     Default is 3.0.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -82,6 +90,8 @@
       `use_bias=false`) $\mathbf{b}_{ih}$.
   - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
       `use_bias=false`) $\mathbf{b}_{hh}$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `alpha`: Learnable scalar to modulate candidate state.
   - `beta`: Learnable scalar to modulate previous state.
@@ -97,6 +107,7 @@
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -104,17 +115,18 @@
     init_beta
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
+    integration_mode
 end
 
 function FastRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32,
-        init_alpha=-3.0f0, init_beta=3.0f0)
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
+        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_alpha=-3.0f0, init_beta=3.0f0, integration_mode=AdditiveIntegration())
     return FastRNNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_alpha, init_beta, static(use_bias), static(use_recurrent_bias))
+        init_bias, init_recurrent_bias, init_integration_bias, init_weight, init_recurrent_weight,
+        init_state, init_alpha, init_beta, static(use_bias), static(use_recurrent_bias), integration_mode)
 end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
@@ -136,9 +148,10 @@ function (fastrnn::FastRNNCell)(
     matched_inp, matched_state = match_eltype(fastrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    candidate_state = @. fastrnn.activation(xs + hs)
+    candidate_state = dense_integration(fastrnn.integration_mode, xs, hs, bias_mi; activation=fastrnn.activation)
     alpha = sigmoid_fast(ps.alpha)
     beta = sigmoid_fast(ps.beta)
     new_state = @. alpha * candidate_state + beta * state
@@ -155,10 +168,11 @@ end
 
 @doc raw"""
     FastGRNNCell(input_size => hidden_size, [activation];
-        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32,
-        init_zeta=1.0, init_nu=4.0)
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, init_bias=nothing,
+        init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        init_zeta=1.0, init_nu=4.0, integration_mode=AdditiveIntegration())
 
 [Fast gated recurrent neural network cell](https://arxiv.org/abs/1901.02358).
 
@@ -191,6 +205,9 @@ end
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -203,6 +220,12 @@ end
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^z, \mathbf{b}_{hh}^h$. Must be a tuple containing
     2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 2-element
+    tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into a 2-element
     tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
     distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
@@ -251,6 +274,8 @@ end
                  ``\{ \mathbf{b}_{hh}^z, \mathbf{b}_{hh}^h \}``
     The initializers in `init_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{hh}^z$, and the second for $\mathbf{b}_{hh}^h$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
   - `zeta`: Learnable scalar to modulate candidate state.
   - `nu`: Learnable scalar to modulate previous state.
@@ -266,6 +291,7 @@ end
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -273,20 +299,24 @@ end
     init_nu
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
+    integration_mode
 end
 
 function FastGRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh_fast;
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), train_state::BoolType=False(),
-        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
+        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
+        init_integration_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32, init_zeta=1.0f0,
-        init_nu=-4.0f0)
+        init_nu=-4.0f0, integration_mode=AdditiveIntegration())
     init_bias isa NTuple{2} || (init_bias = ntuple(Returns(init_bias), 2))
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_integration_bias isa NTuple{2} ||
+        (init_integration_bias = ntuple(Returns(init_integration_bias), 2))
     return FastGRNNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight,
-        init_state, init_zeta, init_nu, static(use_bias), static(use_recurrent_bias))
+        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_integration_bias,
+        init_state, init_zeta, init_nu, static(use_bias), static(use_recurrent_bias), integration_mode)
 end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
@@ -302,6 +332,9 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
     elseif has_recurrent_bias(fastrnn)
         bias_hh = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
         ps = merge(ps, (; bias_hh))
+    elseif has_integration_bias(fastrnn)
+        bias_mi = multi_bias(rng, fastrnn.init_integration_bias, fastrnn.out_dims, fastrnn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(fastrnn) &&
         (ps = merge(ps, (hidden_state=fastrnn.init_state(rng, fastrnn.out_dims),)))
@@ -324,12 +357,14 @@ function (fastrnn::FastGRNNCell)(
     bias_ihs = bias_safe_multigate(bias_ih, Val(2))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_hhs = bias_safe_multigate(bias_hh, Val(2))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
+    bias_mis = bias_safe_multigate(bias_mi, Val(2))
     xsz = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ihs[1])
     xsh = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ihs[2])
     hsz = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[1])
     hsh = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[2])
-    gate = @. fastrnn.activation(xsz + hsz)
-    candidate_state = @. tanh_fast(xsh + hsh)
+    gate = dense_integration(fastrnn.integration_mode, xsz, hsz, bias_mis[1]; activation=fastrnn.activation)
+    candidate_state = dense_integration(fastrnn.integration_mode, xsh, hsh, bias_mis[2]; activation=tanh_fast)
     ones_arr = ones(eltype(gate), size(gate))
     zeta = sigmoid_fast(ps.zeta)
     nu = sigmoid_fast(ps.nu)

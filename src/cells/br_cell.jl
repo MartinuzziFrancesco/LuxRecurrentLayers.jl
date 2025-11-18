@@ -175,7 +175,7 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
         bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_hh))
     elseif has_integration_bias(br)
-        bias_mi = init_rnn_bias(rng, br.init_integration_bias, br.out_dims, br.out_dims)
+        bias_mi = multi_bias(rng, br.init_integration_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_mi))
     end
     has_train_state(br) &&

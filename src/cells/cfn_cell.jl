@@ -200,7 +200,7 @@ function (cfn::CFNCell)(
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(3))
     ghs = multigate(full_ghs, Val(2))
-    bmis = mutigate(bias_mi, Val(2))
+    bmis = bias_safe_multigate(bias_mi, Val(2))
     horizontal_gate = dense_integration(cfn.integration_mode, gxs[1], ghs[1], bmis[1]; activation=sigmoid_fast)
     vertical_gate = dense_integration(cfn.integration_mode, gxs[2], ghs[2], bmis[2]; activation=sigmoid_fast)
     new_state = @. horizontal_gate * tanh_fast(state) + vertical_gate * tanh_fast(gxs[3])
