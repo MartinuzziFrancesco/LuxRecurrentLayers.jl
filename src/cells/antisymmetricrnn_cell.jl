@@ -1,11 +1,11 @@
 #https://arxiv.org/abs/1902.09689
 @doc raw"""
     AntisymmetricRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, use_recurrent_bias=true,
-        train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, init_bias=nothing, init_recurrent_bias=nothing,
+        init_integration_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
-        epsilon=1.0, gamma=0.0)
+        epsilon=1.0, gamma=0.0, integration_mode=AdditiveIntegration())
 
 
 [Antisymmetric recurrent cell](https://arxiv.org/abs/1902.09689).
@@ -33,14 +33,18 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
-  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
-    Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}$. If set to
+  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for weight $\mathbf{W}_{ih}$. If set to
@@ -52,6 +56,8 @@
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `epsilon`: step size $\epsilon$. Default is 1.0.
   - `gamma`: strength of diffusion $\gamma$. Default is 0.0.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -80,7 +86,9 @@
   - `bias_ih`: Bias vector for the input-hidden connection (not present if
       `use_bias=false`) $\mathbf{b}_{ih}$.
   - `bias_hh`: Bias vector for the hidden-hidden connection (not present if
-      `use_bias=false`) $\mathbf{b}_{hh}$.
+      `use_recurrent_bias=false`) $\mathbf{b}_{hh}$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -95,6 +103,7 @@
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
@@ -102,17 +111,18 @@
     use_recurrent_bias <: StaticBool
     epsilon
     gamma
+    integration_mode
 end
 
 function AntisymmetricRNNCell(
         (in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
         train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
-        epsilon=1.0f0, gamma=0.0f0)
+        init_integration_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        epsilon=1.0f0, gamma=0.0f0, integration_mode=AdditiveIntegration())
     return AntisymmetricRNNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
-        static(use_bias), static(use_recurrent_bias), epsilon, gamma)
+        init_bias, init_recurrent_bias, init_integration_bias, init_weight, init_recurrent_weight, init_state,
+        static(use_bias), static(use_recurrent_bias), epsilon, gamma, integration_mode)
 end
 
 function initialparameters(rng::AbstractRNG, asymrnn::AntisymmetricRNNCell)
@@ -129,12 +139,12 @@ function (asymrnn::AntisymmetricRNNCell)(
         ps, st::NamedTuple)
     matched_inp, matched_state = match_eltype(asymrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
-    linear_input = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     asym_weight_hh = compute_asym_recurrent(ps.weight_hh, asymrnn.gamma)
-    linear_recur = fused_dense_bias_activation(
-        identity, asym_weight_hh, matched_state, bias_hh)
-    half_new_state = fast_activation!!(asymrnn.activation, linear_input .+ linear_recur)
+    full_gs = recurrence_double_bias(ligru.integration_mode, ps.weight_ih, asym_weight_hh,
+        matched_inp, matched_state, bias_ih, bias_hh, bias_mi)
+    half_new_state = fast_activation!!(asymrnn.activation, full_gs)
     new_state = matched_state .+ asymrnn.epsilon .* half_new_state
     return (new_state, (new_state,)), st
 end
@@ -143,17 +153,19 @@ function Base.show(io::IO, r::AntisymmetricRNNCell)
     print(io, "AntisymmetricRNNCell($(r.in_dims) => $(r.out_dims)")
     (r.activation == identity) || print(io, ", $(r.activation)")
     has_bias(r) || print(io, ", use_bias=false")
+    has_recurrent_bias(r) || print(io, ", use_recurrent_bias=false")
+    has_integration_bias(r) || print(io, ", use_integration_bias=false")
     has_train_state(r) && print(io, ", train_state=true")
     print(io, ")")
 end
 
 @doc raw"""
     GatedAntisymmetricRNNCell(in_dims => out_dims, [activation];
-        use_bias=true, use_recurrent_bias=true,
-        train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, init_bias=nothing, init_recurrent_bias=nothing,
+        init_integration_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
-        epsilon=1.0, gamma=0.0)
+        epsilon=1.0, gamma=0.0, integration_mode=AdditiveIntegration())
 
 
 
@@ -188,6 +200,9 @@ end
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias $\mathbf{b}_{ih}^z, \mathbf{b}_{ih}^h$.
@@ -199,6 +214,9 @@ end
   - `init_recurrent_bias`: Initializer for hidden to hidden bias $\mathbf{b}_{hh}$. If set to `nothing`,
     weights are initialized from a uniform distribution within `[-bound, bound]` where
     `bound = inv(sqrt(out_dims))`. Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$. If set to
+    `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
+    where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for input to hidden weights $\mathbf{W}_{ih}^z, \mathbf{W}_{ih}^x$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into
@@ -211,6 +229,8 @@ end
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `epsilon`: step size. Default is 1.0.
   - `gamma`: strength of diffusion. Default is 0.0.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -243,8 +263,10 @@ end
                  ``\{ \mathbf{b}_{ih}^z, \mathbf{b}_{ih}^h \}``
     The initializers in `init_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{ih}^z$, and the second for $\mathbf{b}_{ih}^h$.
-  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_recurrent_bias=false`)
     $\mathbf{b}_{hh}$
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -312,12 +334,13 @@ function (asymrnn::GatedAntisymmetricRNNCell)(
     matched_inp, matched_state = match_eltype(asymrnn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     gxs = multigate(full_gxs, Val(2))
     asym_weight_hh = compute_asym_recurrent(ps.weight_hh, asymrnn.gamma)
     hs = fused_dense_bias_activation(identity, asym_weight_hh, matched_state, bias_hh)
-    input_gate = @. sigmoid_fast(hs + gxs[1])
-    half_new_state = @. tanh_fast(hs + gxs[2])
+    input_gate = sigmoid_fast.(dense_integration(asymrnn.integration_mode, hs, gxs[1], bias_mi))
+    half_new_state = @. tanh_fast(dense_integration(asymrnn.integration_mode, hs, gxs[2], bias_mi))
     new_state = @. matched_state .+ asymrnn.epsilon .* input_gate
     return (new_state, (new_state,)), st
 end
@@ -326,6 +349,8 @@ function Base.show(io::IO, r::GatedAntisymmetricRNNCell)
     print(io, "GatedAntisymmetricRNNCell($(r.in_dims) => $(r.out_dims)")
     (r.activation == identity) || print(io, ", $(r.activation)")
     has_bias(r) || print(io, ", use_bias=false")
+    has_recurrent_bias(r) || print(io, ", use_recurrent_bias=false")
+    has_integration_bias(r) || print(io, ", use_integration_bias=false")
     has_train_state(r) && print(io, ", train_state=true")
     print(io, ")")
 end

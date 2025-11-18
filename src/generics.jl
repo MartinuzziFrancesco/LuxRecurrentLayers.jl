@@ -4,6 +4,7 @@ abstract type AbstractDoubleRecurrentCell{TS, TM} <: AbstractRecurrentCell end
 # from lux extendend ops
 for (op, field) in (
     :recurrent_bias => :use_recurrent_bias,
+    :integration_bias => :use_integration_bias,
     :cell_bias => :use_cell_bias,
     :memory_bias => :use_memory_bias,
     :peephole_bias => :use_peephole_bias,
@@ -100,6 +101,10 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrentC
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
+    elseif has_integration_bias(rnn)
+        bias_mi = multi_bias(
+            rng, rnn.init_integration_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -119,6 +124,10 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractDoubleRecurrentC
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
+    elseif has_integration_bias(rnn)
+        bias_mi = multi_bias(
+            rng, rnn.init_integration_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))
@@ -140,6 +149,9 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     elseif has_recurrent_bias(rnn)
         bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
+    elseif has_integration_bias(rnn)
+        bias_mi = init_rnn_bias(rng, rnn.init_integration_bias, rnn.out_dims, rnn.out_dims)
+        ps = merge(ps, (; bias_mi))
     end
     has_train_state(rnn) &&
         (ps = merge(ps, (hidden_state=rnn.init_state(rng, rnn.out_dims),)))

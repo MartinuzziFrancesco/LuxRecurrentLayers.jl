@@ -1,9 +1,11 @@
 #https://arxiv.org/abs/1612.06212
 @doc raw"""
     CFNCell(in_dims => out_dims, [activation];
-        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
-        init_recurrent_bias=nothing, init_weight=nothing,
-        init_recurrent_weight=nothing, init_state=zeros32)
+        use_bias=true, use_recurrent_bias=true, use_integration_bias=false,
+        train_state=false, init_bias=nothing,
+        init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32,
+        integration_mode=AdditiveIntegration())
 
 
 [Chaos free network unit](https://arxiv.org/abs/1612.06212).
@@ -37,6 +39,9 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
+  - `use_integration_bias`: Flag to use integration bias $\mathbf{b}_{mi}$ in the computation.
+    This bias is only useful for multiplicative integration. Check the docs page on multiplicative
+    integration for more details. Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias
@@ -48,6 +53,12 @@
     Default is `nothing`.
   - `init_recurrent_bias`: Initializer for hidden to hidden bias
     $\mathbf{b}_{hh}^{\theta}, \mathbf{b}_{hh}^{\eta}$.
+    Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
+    If a single function `fn` is provided, it is automatically expanded into a 2-element
+    tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_integration_bias`: Initializer for integration bias $\mathbf{b}_{mi}$.
     Must be a tuple containing 2 functions, e.g., `(glorot_normal, kaiming_uniform)`.
     If a single function `fn` is provided, it is automatically expanded into a 2-element
     tuple (fn, fn). If set to `nothing`, weights are initialized from a uniform
@@ -68,6 +79,8 @@
     a uniform distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
     Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+  - `integration_mode`: integration type for the recurrent forward pass.
+    Default is [`AdditiveIntegration()`](@ref).
 
 ## Inputs
 
@@ -111,6 +124,8 @@
     The initializers in `init_recurrent_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{hh}^{\theta}$, and the second for
       $\mathbf{b}_{hh}^{\eta}$.
+  - `bias_mi`: Bias vector for the integration connection (not present if `use_integration_bias=false`)
+    $\mathbf{b}_{mi}$
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
 ## States
@@ -125,26 +140,31 @@
     out_dims <: IntegerType
     init_bias
     init_recurrent_bias
+    init_integration_bias
     init_weight
     init_recurrent_weight
     init_state
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
+    integration_mode
 end
 
 function CFNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType}, activation=tanh;
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
-        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing,
-        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(), use_integration_bias::BoolType=False(),
+        train_state::BoolType=False(), init_bias=nothing, init_recurrent_bias=nothing, init_integration_bias=nothing,
+        init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32, integration_mode=AdditiveIntegration())
     init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
     init_recurrent_bias isa NTuple{2} ||
         (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
+    init_integration_bias isa NTuple{2} ||
+        (init_integration_bias = ntuple(Returns(init_integration_bias), 2))
     return CFNCell(static(train_state), activation, in_dims, out_dims,
-        init_bias, init_recurrent_bias, init_weight,
-        init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias))
+        init_bias, init_recurrent_bias, init_integration_bias, init_weight,
+        init_recurrent_weight, init_state, static(use_bias), static(use_recurrent_bias),
+        integration_mode)
 end
 
 initialparameters(rng::AbstractRNG, cfn::CFNCell) = multi_initialparameters(rng, cfn)
@@ -175,12 +195,14 @@ function (cfn::CFNCell)(
     matched_inp, matched_state = match_eltype(cfn, ps, st, inp, state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    bias_mi = safe_getproperty(ps, Val(:bias_mi))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gxs = multigate(full_gxs, Val(3))
     ghs = multigate(full_ghs, Val(2))
-    horizontal_gate = @. sigmoid_fast(gxs[1] + ghs[1])
-    vertical_gate = @. sigmoid_fast(gxs[2] + ghs[2])
+    bmis = bias_safe_multigate(bias_mi, Val(2))
+    horizontal_gate = dense_integration(cfn.integration_mode, gxs[1], ghs[1], bmis[1]; activation=sigmoid_fast)
+    vertical_gate = dense_integration(cfn.integration_mode, gxs[2], ghs[2], bmis[2]; activation=sigmoid_fast)
     new_state = @. horizontal_gate * tanh_fast(state) + vertical_gate * tanh_fast(gxs[3])
     return (new_state, (new_state,)), st
 end
