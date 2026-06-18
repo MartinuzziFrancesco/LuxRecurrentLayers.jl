@@ -1,7 +1,7 @@
 #https://arxiv.org/abs/1810.12546
 @doc raw"""
     ATRCell(in_dims => out_dims;
-        use_bias=true, use_recurrent bias=true, train_state=false,
+        use_bias=true, use_recurrent_bias=true, train_state=false,
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing, init_state=zeros32)
 
@@ -134,8 +134,8 @@ function (atr::ATRCell)(
     pt = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     qt = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     it = @. sigmoid_fast(pt + qt)
-    ft = @. sigmoid_fast(pt + qt)
-    new_state = @. it * pt + ft * state
+    ft = @. sigmoid_fast(pt - qt)
+    new_state = @. it * pt + ft * matched_state
     return (new_state, (new_state,)), st
 end
 

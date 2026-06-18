@@ -33,14 +33,12 @@
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
-  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
-    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for bias $\mathbf{b}_{ih}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
-  - `init_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}$. If set to
+  - `init_recurrent_bias`: Initializer for recurrent bias $\mathbf{b}_{hh}$. If set to
     `nothing`, weights are initialized from a uniform distribution within `[-bound, bound]`
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_weight`: Initializer for weight $\mathbf{W}_{ih}$. If set to
@@ -186,8 +184,6 @@ end
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
     Default set to `true`.
-  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
-    Default set to `true`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `init_bias`: Initializer for input to hidden bias $\mathbf{b}_{ih}^z, \mathbf{b}_{ih}^h$.
@@ -318,7 +314,7 @@ function (asymrnn::GatedAntisymmetricRNNCell)(
     hs = fused_dense_bias_activation(identity, asym_weight_hh, matched_state, bias_hh)
     input_gate = @. sigmoid_fast(hs + gxs[1])
     half_new_state = @. tanh_fast(hs + gxs[2])
-    new_state = @. matched_state .+ asymrnn.epsilon .* input_gate
+    new_state = @. matched_state + asymrnn.epsilon * input_gate * half_new_state
     return (new_state, (new_state,)), st
 end
 

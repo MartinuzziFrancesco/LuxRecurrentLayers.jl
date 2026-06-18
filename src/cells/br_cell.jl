@@ -101,12 +101,12 @@
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
                  ``\{ \mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h \}``
     The initializers in `init_bias` are applied in the order they appear:
-    the first function is used for $\mathbf{b}_{ih}^z$, the second for
+    the first function is used for $\mathbf{b}_{ih}^a$, the second for
     $\mathbf{b}_{ih}^c$, and the third for $\mathbf{b}_{ih}^h$.
-  - `bias_hh`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
                  ``\{ \mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c \}``
-    The initializers in `init_bias` are applied in the order they appear:
-    the first function is used for $\mathbf{b}_{hh}^z$, and the second for
+    The initializers in `init_recurrent_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{hh}^a$, and the second for
     $\mathbf{b}_{hh}^c$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 
@@ -137,8 +137,8 @@ function BRCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
     init_recurrent_weight isa NTuple{2} ||
         (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 2))
     init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
-    init_recurrent_bias isa NTuple{3} ||
-        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
+    init_recurrent_bias isa NTuple{2} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 2))
     return BRCell(static(train_state), in_dims, out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_state, static(use_bias),
         static(use_recurrent_bias))
@@ -179,14 +179,13 @@ function (br::BRCell)(
     full_xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     xs = multigate(full_xs, Val(3))
     ws = multigate(ps.weight_hh, Val(2))
-    bhs = bias_safe_multigate(bias_hh, Val(3))
+    bhs = bias_safe_multigate(bias_hh, Val(2))
     modulation_gate = t_ones .+
                       bias_activation(tanh_fast, xs[1] .+ ws[1] .* matched_state, bhs[1])
     candidate_state = bias_activation(sigmoid_fast, xs[2] .+ ws[2] .* matched_state, bhs[2])
     new_state = candidate_state .* matched_state .+
                 (t_ones .- candidate_state) .*
-                bias_activation(
-        tanh_fast, xs[3] .+ modulation_gate .* matched_state, bhs[3])
+                tanh_fast.(xs[3] .+ modulation_gate .* matched_state)
     return (new_state, (new_state,)), st
 end
 
@@ -199,7 +198,7 @@ end
 
 @doc raw"""
     NBRCell(in_dims => out_dims;
-        use_bias=true, use_recurrent_ bias=true, train_state=false, init_bias=nothing,
+        use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32)
 
@@ -299,12 +298,12 @@ end
   - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
                  ``\{ \mathbf{b}_{ih}^a, \mathbf{b}_{ih}^c, \mathbf{b}_{ih}^h \}``
     The initializers in `init_bias` are applied in the order they appear:
-    the first function is used for $\mathbf{b}_{ih}^z$, the second for
+    the first function is used for $\mathbf{b}_{ih}^a$, the second for
     $\mathbf{b}_{ih}^c$, and the third for $\mathbf{b}_{ih}^h$.
-  - `bias_hh`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
                  ``\{ \mathbf{b}_{hh}^a, \mathbf{b}_{hh}^c \}``
-    The initializers in `init_bias` are applied in the order they appear:
-    the first function is used for $\mathbf{b}_{hh}^z$, and the second for
+    The initializers in `init_recurrent_bias` are applied in the order they appear:
+    the first function is used for $\mathbf{b}_{hh}^a$, and the second for
     $\mathbf{b}_{hh}^c$.
   - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
 

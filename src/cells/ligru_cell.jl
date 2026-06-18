@@ -159,7 +159,7 @@ function (ligru::LiGRUCell)(
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     gs = multigate(full_gxs .+ full_ghs, Val(2))
     forget_gate = @. sigmoid_fast(gs[1])
-    candidate_hidden = @. tanh_fast(gs[2])
+    candidate_hidden = @. relu(gs[2])
     new_state = @. forget_gate * state + (1 - forget_gate) * candidate_hidden
     return (new_state, (new_state,)), st
 end

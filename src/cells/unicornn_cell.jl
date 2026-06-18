@@ -170,7 +170,8 @@ function (unicornn::UnICORNNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         unicornn, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

@@ -177,7 +177,7 @@
     init_memory
     use_bias <: StaticBool
     use_recurrent_bias <: StaticBool
-    use_peepehole_bias <: StaticBool
+    use_peephole_bias <: StaticBool
 end
 
 function PeepholeLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
@@ -238,7 +238,8 @@ function (lstm::PeepholeLSTMCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         lstm, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

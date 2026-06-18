@@ -174,7 +174,8 @@ function (ran::RANCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         ran, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

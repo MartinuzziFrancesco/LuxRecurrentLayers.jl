@@ -7,7 +7,8 @@ for (op, field) in (
     :cell_bias => :use_cell_bias,
     :memory_bias => :use_memory_bias,
     :peephole_bias => :use_peephole_bias,
-    :context_bias => :use_context_bias
+    :context_bias => :use_context_bias,
+    :multiplicative_bias => :use_multiplicative_bias
 )
     @eval function $(Symbol(:has_, op))(l::AbstractLuxLayer)
         res = known(safe_getproperty(l, Val($(Meta.quot(field)))))

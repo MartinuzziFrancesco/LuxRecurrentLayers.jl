@@ -186,7 +186,8 @@ function (minimal::MinimalRNNCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_memory = match_eltype(
+    matched_inp, matched_state,
+    matched_memory = match_eltype(
         minimal, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

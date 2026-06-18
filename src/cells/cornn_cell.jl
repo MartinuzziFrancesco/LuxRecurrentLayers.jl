@@ -190,7 +190,8 @@ function (cornn::coRNNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

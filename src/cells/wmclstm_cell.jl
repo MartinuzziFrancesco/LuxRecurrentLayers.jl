@@ -244,12 +244,13 @@ function (lstm::WMCLSTMCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         lstm, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    bias_ph = safe_getproperty(ps, Val(:bias_ph))
+    bias_mh = safe_getproperty(ps, Val(:bias_mh))
     #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)

@@ -1,4 +1,4 @@
-#https://arxiv.org/pdf/1412.7753
+#https://arxiv.org/pdf/2110.04744
 
 @doc raw"""
     LEMCell(in_dims => out_dims;
@@ -79,7 +79,7 @@
     where `bound = inv(sqrt(out_dims))`. Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
-  - `dt`: timestep. Defaul is 1.0.
+  - `dt`: timestep. Default is 1.0.
 
 ## Inputs
 
@@ -217,7 +217,8 @@ function (lem::LEMCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         lem, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

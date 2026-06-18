@@ -328,12 +328,12 @@ function (tgru::TGRUCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         tgru, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
-    bias_ph = safe_getproperty(ps, Val(:bias_ph))
     #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_cstate, bias_hh)
@@ -556,7 +556,8 @@ function (lstm::TLSTMCell)(
     #type match
     matched_inp, matched_state = match_eltype(
         lstm, ps, st, inp, state, c_state)
-    matched_previnp, mateched_cstate, = match_eltype(
+    matched_previnp,
+    mateched_cstate, = match_eltype(
         lstm, ps, st, prev_inp, c_state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
@@ -595,14 +596,14 @@ function (rcell::TLSTMCell{False, True})(inp::AbstractMatrix,
         ps, st::NamedTuple)
     rng = replicate(st.rng)
     state = init_rnn_hidden_state(rng, rcell, inp)
-    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state, inp)), ps, merge(st, (; rng)))
 end
 
 function (rcell::TLSTMCell{True, True})(inp::AbstractMatrix,
         ps, st::NamedTuple)
     state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
-    c_state = init_trainable_rnn_hidden_state(ps.hidden_state, inp)
+    c_state = init_trainable_rnn_hidden_state(ps.memory, inp)
     return rcell((inp, (state, c_state, inp)), ps, st)
 end
 

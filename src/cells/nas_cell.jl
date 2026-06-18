@@ -194,7 +194,8 @@ function (nas::NASCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         nas, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
@@ -202,18 +203,18 @@ function (nas::NASCell)(
     #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    gates = full_gxs .+ full_ghs
-    split_gates = multigate(gates, Val(8))
+    gxs = multigate(full_gxs, Val(8))
+    ghs = multigate(full_ghs, Val(8))
     #computation
     #first layer
-    layer1_1 = sigmoid_fast.(split_gates[1])
-    layer1_2 = relu.(split_gates[2])
-    layer1_3 = sigmoid_fast.(split_gates[3])
-    layer1_4 = relu.(split_gates[4])
-    layer1_5 = tanh_fast.(split_gates[5])
-    layer1_6 = sigmoid_fast.(split_gates[6])
-    layer1_7 = tanh_fast.(split_gates[7])
-    layer1_8 = sigmoid_fast.(split_gates[8])
+    layer1_1 = @. sigmoid_fast(gxs[1] + ghs[1])
+    layer1_2 = @. relu(gxs[2] + ghs[2])
+    layer1_3 = @. sigmoid_fast(gxs[3] + ghs[3])
+    layer1_4 = @. relu(gxs[4] * ghs[4])
+    layer1_5 = @. tanh_fast(gxs[5] + ghs[5])
+    layer1_6 = @. sigmoid_fast(gxs[6] + ghs[6])
+    layer1_7 = @. tanh_fast(gxs[7] + ghs[7])
+    layer1_8 = @. sigmoid_fast(gxs[8] + ghs[8])
 
     #second layer
     l2_1 = @. tanh_fast(layer1_1 * layer1_2)
