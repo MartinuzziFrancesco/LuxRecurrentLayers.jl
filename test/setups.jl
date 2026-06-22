@@ -107,6 +107,21 @@ function format_knobs(kw::AbstractDict)
         ", ")
 end
 
+# Testing the full 2^n Cartesian product of the boolean knobs is prohibitively
+# slow on CI (cells with 5 knobs => 32 combinations, each running several AD
+# backends). Instead we cover every knob in both states with a curated subset:
+# all-off, all-on, and each knob toggled on individually.
+function knob_settings(knobs)
+    n = length(knobs)
+    settings = [Dict(knobs .=> falses(n)), Dict(knobs .=> trues(n))]
+    for i in 1:n
+        opts = falses(n)
+        opts[i] = true
+        push!(settings, Dict(knobs .=> opts))
+    end
+    return unique(settings)
+end
+
 function loss_loop(cell, x, p, st)
     (y, carry), st_ = cell(x, p, st)
     for _ in 1:3
@@ -123,7 +138,7 @@ function loss_loop_no_carry(cell, x, p, st)
     return sum(abs2, y)
 end
 
-export loss_loop, loss_loop_no_carry, format_knobs, RECURRENT_CELLS
+export loss_loop, loss_loop_no_carry, format_knobs, knob_settings, RECURRENT_CELLS
 
 end
 
