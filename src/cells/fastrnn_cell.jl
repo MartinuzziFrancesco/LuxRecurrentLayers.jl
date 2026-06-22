@@ -299,7 +299,8 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
     if has_bias(fastrnn)
         bias_ih = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(fastrnn)
+    end
+    if has_recurrent_bias(fastrnn)
         bias_hh = multi_bias(rng, fastrnn.init_recurrent_bias, fastrnn.out_dims, fastrnn.out_dims)
         ps = merge(ps, (; bias_hh))
     end

@@ -3,10 +3,6 @@
 ] begin
     rng = StableRNG(12345)
 
-    # Enzyme does not reliably support Julia 1.12+ (EnzymeAD/Enzyme.jl#2347,
-    # FluxML/Flux.jl#2657), so skip that backend there. On <1.12 it keeps running.
-    enzyme_skip = VERSION ≥ v"1.12-" ? Any[AutoEnzyme()] : Any[]
-
     for (mode, A, dev, on_gpu) in MODES
         @testset "$mode" begin
             for (name, build_cell, knobs) in RECURRENT_CELLS
@@ -42,8 +38,7 @@
                                     ps,
                                     st;
                                     atol=1e-3,
-                                    rtol=1e-3,
-                                    skip_backends=enzyme_skip,)
+                                    rtol=1e-3,)
                             end
                         end
                     end

@@ -195,10 +195,12 @@ function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(lstm)
+    end
+    if has_recurrent_bias(lstm)
         bias_hh = init_rnn_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_multiplicative_bias(lstm)
+    end
+    if has_multiplicative_bias(lstm)
         bias_mh = multi_bias(
             rng, lstm.init_multiplicative_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_mh))

@@ -149,7 +149,8 @@ function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
         bias_ih = init_rnn_bias(
             rng, unicornn.init_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(unicornn)
+    end
+    if has_recurrent_bias(unicornn)
         bias_hh = init_rnn_bias(
             rng, unicornn.init_recurrent_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_hh))

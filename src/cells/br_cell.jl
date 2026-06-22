@@ -153,7 +153,8 @@ function initialparameters(rng::AbstractRNG, br::BRCell)
     if has_bias(br)
         bias_ih = multi_bias(rng, br.init_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(br)
+    end
+    if has_recurrent_bias(br)
         bias_hh = multi_bias(rng, br.init_recurrent_bias, br.out_dims, br.out_dims)
         ps = merge(ps, (; bias_hh))
     end

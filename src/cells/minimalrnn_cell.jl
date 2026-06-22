@@ -155,11 +155,13 @@ function initialparameters(rng::AbstractRNG, minimal::MinimalRNNCell)
         bias_ih = init_rnn_bias(
             rng, minimal.init_encoder_bias, minimal.out_dims, minimal.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(minimal)
+    end
+    if has_recurrent_bias(minimal)
         bias_hh = init_rnn_bias(
             rng, minimal.init_recurrent_bias, minimal.out_dims, minimal.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_memory_bias(minimal)
+    end
+    if has_memory_bias(minimal)
         bias_mm = init_rnn_bias(
             rng, minimal.init_memory_bias, minimal.out_dims, minimal.out_dims)
         ps = merge(ps, (; bias_mm))

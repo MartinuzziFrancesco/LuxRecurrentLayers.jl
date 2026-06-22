@@ -193,10 +193,12 @@ function initialparameters(rng::AbstractRNG, lem::LEMCell)
     if has_bias(lem)
         bias_ih = multi_bias(rng, lem.init_bias, lem.out_dims, lem.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(lem)
+    end
+    if has_recurrent_bias(lem)
         bias_hh = multi_bias(rng, lem.init_recurrent_bias, lem.out_dims, lem.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_cell_bias(lem)
+    end
+    if has_cell_bias(lem)
         bias_ch = init_rnn_bias(rng, lem.init_cell_bias, lem.out_dims, lem.out_dims)
         ps = merge(ps, (; bias_ch))
     end

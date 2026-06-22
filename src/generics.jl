@@ -97,7 +97,8 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrentC
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(rnn)
+    end
+    if has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
@@ -116,7 +117,8 @@ function multi_initialparameters(rng::AbstractRNG, rnn::AbstractDoubleRecurrentC
     if has_bias(rnn)
         bias_ih = multi_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(rnn)
+    end
+    if has_recurrent_bias(rnn)
         bias_hh = multi_bias(
             rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
@@ -138,7 +140,8 @@ function single_initialparameters(rng::AbstractRNG, rnn::AbstractSingleRecurrent
     if has_bias(rnn)
         bias_ih = init_rnn_bias(rng, rnn.init_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(rnn)
+    end
+    if has_recurrent_bias(rnn)
         bias_hh = init_rnn_bias(rng, rnn.init_recurrent_bias, rnn.out_dims, rnn.out_dims)
         ps = merge(ps, (; bias_hh))
     end

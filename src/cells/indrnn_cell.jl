@@ -113,7 +113,8 @@ function initialparameters(rng::AbstractRNG, indrnn::IndRNNCell)
     if has_bias(indrnn)
         bias_ih = init_rnn_bias(rng, indrnn.init_bias, indrnn.out_dims, indrnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(indrnn)
+    end
+    if has_recurrent_bias(indrnn)
         bias_hh = init_rnn_bias(
             rng, indrnn.init_recurrent_bias, indrnn.out_dims, indrnn.out_dims)
         ps = merge(ps, (; bias_hh))

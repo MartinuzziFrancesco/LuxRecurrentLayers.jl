@@ -287,7 +287,8 @@ function initialparameters(rng::AbstractRNG, asymrnn::GatedAntisymmetricRNNCell)
     if has_bias(asymrnn)
         bias_ih = multi_bias(rng, asymrnn.init_bias, asymrnn.out_dims, asymrnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(asymrnn)
+    end
+    if has_recurrent_bias(asymrnn)
         bias_hh = init_rnn_bias(
             rng, asymrnn.init_recurrent_bias, asymrnn.out_dims, asymrnn.out_dims)
         ps = merge(ps, (; bias_hh))

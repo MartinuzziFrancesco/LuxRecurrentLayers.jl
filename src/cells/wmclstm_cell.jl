@@ -219,10 +219,12 @@ function initialparameters(rng::AbstractRNG, lstm::WMCLSTMCell)
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(lstm)
+    end
+    if has_recurrent_bias(lstm)
         bias_hh = multi_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_memory_bias(lstm)
+    end
+    if has_memory_bias(lstm)
         bias_mh = multi_bias(rng, lstm.init_memory_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_mh))
     end
@@ -256,15 +258,18 @@ function (lstm::WMCLSTMCell)(
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     fused_gates = @. full_gxs + full_ghs
     memory_matrices = multigate(ps.weight_mh, Val(3))
-    memory_gates = memory_matrices[1] * matched_cstate, memory_matrices[2] * matched_cstate
+    bias_mhs = bias_safe_multigate(bias_mh, Val(3))
+    memory_gates = bias_activation(
+                       tanh_fast, memory_matrices[1] * matched_cstate, bias_mhs[1]),
+    bias_activation(tanh_fast, memory_matrices[2] * matched_cstate, bias_mhs[2])
     gates = multigate(fused_gates, Val(4))
 
-    input_gate = @. sigmoid_fast(gates[1] + tanh_fast(memory_gates[1]))
-    forget_gate = @. sigmoid_fast(gates[2] + tanh_fast(memory_gates[2]))
+    input_gate = @. sigmoid_fast(gates[1] + memory_gates[1])
+    forget_gate = @. sigmoid_fast(gates[2] + memory_gates[2])
     cell_gate = @. tanh_fast(gates[4])
     new_cstate = @. forget_gate * matched_cstate + input_gate * cell_gate
-    memory_gate = memory_matrices[3] * new_cstate
-    output_gate = @. sigmoid_fast(gates[3] + tanh_fast(memory_gate))
+    memory_gate = bias_activation(tanh_fast, memory_matrices[3] * new_cstate, bias_mhs[3])
+    output_gate = @. sigmoid_fast(gates[3] + memory_gate)
     new_state = @. output_gate * tanh_fast(new_cstate)
     return (new_state, (new_state, new_cstate)), st
 end

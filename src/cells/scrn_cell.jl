@@ -192,10 +192,12 @@ function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
     if has_bias(scrn)
         bias_ih = multi_bias(rng, scrn.init_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(scrn)
+    end
+    if has_recurrent_bias(scrn)
         bias_hh = multi_bias(rng, scrn.init_recurrent_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_context_bias(scrn)
+    end
+    if has_context_bias(scrn)
         bias_ch = multi_bias(rng, scrn.init_context_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_ch))
     end
