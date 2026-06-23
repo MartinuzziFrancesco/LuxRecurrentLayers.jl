@@ -195,10 +195,12 @@ function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
     if has_bias(lstm)
         bias_ih = multi_bias(rng, lstm.init_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(lstm)
+    end
+    if has_recurrent_bias(lstm)
         bias_hh = init_rnn_bias(rng, lstm.init_recurrent_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_multiplicative_bias(lstm)
+    end
+    if has_multiplicative_bias(lstm)
         bias_mh = multi_bias(
             rng, lstm.init_multiplicative_bias, lstm.out_dims, lstm.out_dims)
         ps = merge(ps, (; bias_mh))
@@ -221,7 +223,8 @@ function (lstm::MultiplicativeLSTMCell)(
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         lstm, ps, st, inp, state, c_state)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
@@ -240,7 +243,7 @@ function (lstm::MultiplicativeLSTMCell)(
     forget_gate = @. sigmoid_fast(gxs[4] + gms[3])
     candidate_state = @. tanh_fast(gxs[5] + gms[4])
     new_cstate = @. forget_gate * matched_cstate + input_gate * candidate_state
-    new_state = @. tanh_fast(candidate_state) * output_gate
+    new_state = @. tanh_fast(new_cstate) * output_gate
     return (new_state, (new_state, new_cstate)), st
 end
 

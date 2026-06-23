@@ -106,7 +106,7 @@
     The initializers in `init_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{ih}^{\theta}$, the second for
       $\mathbf{b}_{ih}^{\eta}$, and the third for $\mathbf{b}_{ih}^{h}$.
-  - `bias_ih`: Bias vector for the input-hidden connection (not present if `use_bias=false`)
+  - `bias_hh`: Bias vector for the hidden-hidden connection (not present if `use_bias=false`)
                  ``\{ \mathbf{b}_{hh}^{\theta}, \mathbf{b}_{hh}^{\eta} \}``
     The initializers in `init_recurrent_bias` are applied in the order they appear:
     the first function is used for $\mathbf{b}_{hh}^{\theta}$, and the second for

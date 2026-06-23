@@ -162,7 +162,8 @@ function (janet::JANETCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         janet, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -181,7 +182,7 @@ function (janet::JANETCell)(
 end
 
 function Base.show(io::IO, janet::JANETCell)
-    print(io, "LSTMCell($(janet.in_dims) => $(janet.out_dims)")
+    print(io, "JANETCell($(janet.in_dims) => $(janet.out_dims)")
     has_bias(janet) || print(io, ", use_bias=false")
     has_train_state(janet) && print(io, ", train_state=true")
     known(janet.train_memory) && print(io, ", train_memory=true")

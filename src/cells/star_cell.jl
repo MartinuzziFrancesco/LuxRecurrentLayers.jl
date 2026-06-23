@@ -141,7 +141,8 @@ function initialparameters(rng::AbstractRNG, star::STARCell)
     if has_bias(star)
         bias_ih = multi_bias(rng, star.init_bias, star.out_dims, star.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(star)
+    end
+    if has_recurrent_bias(star)
         bias_hh = init_rnn_bias(rng, star.init_recurrent_bias, star.out_dims, star.out_dims)
         ps = merge(ps, (; bias_hh))
     end

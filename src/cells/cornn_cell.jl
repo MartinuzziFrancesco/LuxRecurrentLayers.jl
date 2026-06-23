@@ -165,11 +165,13 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
     if has_bias(cornn)
         bias_ih = init_rnn_bias(rng, cornn.init_bias, cornn.out_dims, cornn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(cornn)
+    end
+    if has_recurrent_bias(cornn)
         bias_hh = init_rnn_bias(
             rng, cornn.init_recurrent_bias, cornn.out_dims, cornn.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_cell_bias(cornn)
+    end
+    if has_cell_bias(cornn)
         bias_ch = init_rnn_bias(rng, cornn.init_cell_bias, cornn.out_dims, cornn.out_dims)
         ps = merge(ps, (; bias_ch))
     end
@@ -190,7 +192,8 @@ function (cornn::coRNNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         cornn, ps, st, inp, state, c_state)
     dt, gamma, epsilon = cornn.dt, cornn.gamma, cornn.epsilon
     bias_ih = safe_getproperty(ps, Val(:bias_ih))

@@ -192,10 +192,12 @@ function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
     if has_bias(scrn)
         bias_ih = multi_bias(rng, scrn.init_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(scrn)
+    end
+    if has_recurrent_bias(scrn)
         bias_hh = multi_bias(rng, scrn.init_recurrent_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_hh))
-    elseif has_context_bias(scrn)
+    end
+    if has_context_bias(scrn)
         bias_ch = multi_bias(rng, scrn.init_context_bias, scrn.out_dims, scrn.out_dims)
         ps = merge(ps, (; bias_ch))
     end
@@ -217,7 +219,8 @@ function (scrn::SCRNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         scrn, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))

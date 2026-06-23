@@ -299,8 +299,9 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
     if has_bias(fastrnn)
         bias_ih = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(fastrnn)
-        bias_hh = multi_bias(rng, fastrnn.init_bias, fastrnn.out_dims, fastrnn.out_dims)
+    end
+    if has_recurrent_bias(fastrnn)
+        bias_hh = multi_bias(rng, fastrnn.init_recurrent_bias, fastrnn.out_dims, fastrnn.out_dims)
         ps = merge(ps, (; bias_hh))
     end
     has_train_state(fastrnn) &&
@@ -328,7 +329,7 @@ function (fastrnn::FastGRNNCell)(
     xsh = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ihs[2])
     hsz = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[1])
     hsh = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hhs[2])
-    gate = @. fastrnn.activation(xsz + hsz)
+    gate = @. sigmoid_fast(xsz + hsz)
     candidate_state = @. tanh_fast(xsh + hsh)
     ones_arr = ones(eltype(gate), size(gate))
     zeta = sigmoid_fast(ps.zeta)

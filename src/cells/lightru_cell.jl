@@ -138,7 +138,8 @@ function initialparameters(rng::AbstractRNG, lightru::LightRUCell)
     if has_bias(lightru)
         bias_ih = multi_bias(rng, lightru.init_bias, lightru.out_dims, lightru.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(lightru)
+    end
+    if has_recurrent_bias(lightru)
         bias_hh = init_rnn_bias(
             rng, lightru.init_recurrent_bias, lightru.out_dims, lightru.out_dims)
         ps = merge(ps, (; bias_hh))

@@ -7,8 +7,7 @@
         @testset "$mode" begin
             for (name, build_cell, knobs) in RECURRENT_CELLS
                 @testset "Cell: $name" begin
-                    for opts in Iterators.product(((true, false) for _ in knobs)...)
-                        kw = Dict(knobs .=> opts)
+                    for kw in knob_settings(knobs)
                         cell = build_cell(; kw...)
                         ps, st = dev(Lux.setup(rng, cell))
 

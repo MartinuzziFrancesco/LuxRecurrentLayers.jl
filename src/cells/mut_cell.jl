@@ -336,7 +336,7 @@ function (mut::MUT2Cell)(
     forget_gate = bias_activation(sigmoid_fast, gxs[1] .+ whs[1] * matched_state, bhs[1])
     reset_gate = bias_activation(sigmoid_fast, gxs[2] .+ whs[2] * matched_state, bhs[2])
     candidate_state = bias_activation(
-        sigmoid_fast, whs[3] * (reset_gate .* matched_state) .+ gxs[3], bhs[3])
+        tanh_fast, whs[3] * (reset_gate .* matched_state) .+ gxs[3], bhs[3])
     new_state = candidate_state .* forget_gate .+ matched_state .* (t_ones .- forget_gate)
     return (new_state, (new_state,)), st
 end

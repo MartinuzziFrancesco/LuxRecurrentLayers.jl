@@ -149,7 +149,8 @@ function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
         bias_ih = init_rnn_bias(
             rng, unicornn.init_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_ih))
-    elseif has_recurrent_bias(unicornn)
+    end
+    if has_recurrent_bias(unicornn)
         bias_hh = init_rnn_bias(
             rng, unicornn.init_recurrent_bias, unicornn.out_dims, unicornn.out_dims)
         ps = merge(ps, (; bias_hh))
@@ -170,7 +171,8 @@ function (unicornn::UnICORNNCell)(
             (state, c_state))::Tuple{
             <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
         ps, st::NamedTuple)
-    matched_inp, matched_state, matched_cstate = match_eltype(
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
         unicornn, ps, st, inp, state, c_state)
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
