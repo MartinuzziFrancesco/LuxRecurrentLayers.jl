@@ -6,7 +6,7 @@
         init_bias=nothing, init_recurrent_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_state=zeros32, init_memory=zeros32,
-        dt=1.0, alpha=0.0)
+        dt=0.1, alpha=0.0)
 
 [Undamped independent controlled oscillatory recurrent neural unit](https://arxiv.org/abs/2103.05487).
 
@@ -32,7 +32,7 @@
   - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
     Default set to `true`.
   - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
-    Default set to `true`.
+    Default set to `false`.
   - `train_state`: Flag to set the initial hidden state as trainable.
     Default set to `false`.
   - `train_memory`: Flag to set the initial memory state as trainable.
@@ -50,15 +50,17 @@
   - `init_recurrent_weight`: Initializer for recurrent weight
     $\mathbf{w}_{hh}$.
     Must be a single function. If set to `nothing`, the weight is initialized from
-    a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.
+    a uniform distribution within `[0, 1]`, as in the official implementation.
     Default set to `nothing`.
   - `init_control_weight`: Initializer for control weight
     $\mathbf{w}_{ch}$.
     Must be a single function. If set to `nothing`, the weight is initialized from
-    a uniform distribution within `[-bound, bound]`, where `bound = inv(sqrt(out_dims))`.
+    a uniform distribution within `[-0.1, 0.1]`, as in the official implementation.
     Default set to `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
+  - `dt`: Time step. Default is 0.1.
+  - `alpha`: Restoring-force coefficient. Default is 0.0.
 ## Inputs
 
   - Case 1a: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
@@ -125,12 +127,17 @@
     alpha
 end
 
+unicornn_recurrent_uniform(rng::AbstractRNG, dims...) = rand(rng, Float32, dims...)
+function unicornn_control_uniform(rng::AbstractRNG, dims...)
+    return 0.2f0 .* rand(rng, Float32, dims...) .- 0.1f0
+end
+
 function UnICORNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
-        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=False(),
         train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
         init_control_weight=nothing, init_recurrent_bias=nothing,
-        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, alpha::Number=0.0f0)
+        init_state=zeros32, init_memory=zeros32, dt::Number=0.1f0, alpha::Number=0.0f0)
     return UnICORNNCell(static(train_state), static(train_memory), in_dims,
         out_dims, init_bias, init_recurrent_bias,
         init_weight, init_recurrent_weight, init_control_weight,
@@ -140,10 +147,11 @@ end
 function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
     weight_ih = init_rnn_weight(
         rng, unicornn.init_weight, unicornn.out_dims, (unicornn.out_dims, unicornn.in_dims))
-    weight_hh = vec(init_rnn_weight(
-        rng, unicornn.init_recurrent_weight, unicornn.out_dims, (unicornn.out_dims, 1)))
-    weight_ch = vec(init_rnn_weight(
-        rng, unicornn.init_control_weight, unicornn.out_dims, (unicornn.out_dims, 1)))
+    recurrent_init = something(
+        unicornn.init_recurrent_weight, unicornn_recurrent_uniform)
+    control_init = something(unicornn.init_control_weight, unicornn_control_uniform)
+    weight_hh = vec(recurrent_init(rng, unicornn.out_dims, 1))
+    weight_ch = vec(control_init(rng, unicornn.out_dims, 1))
     ps = (; weight_ih, weight_hh, weight_ch)
     if has_bias(unicornn)
         bias_ih = init_rnn_bias(
@@ -184,7 +192,7 @@ function (unicornn::UnICORNNCell)(
                  dt .* sigmoid_fast.(ps.weight_ch) .*
                  (tanh_fast.(wh .+ wi) .+
                   alpha .* matched_state)
-    new_state = state .+ dt .* sigmoid_fast.(ps.weight_ch) .* new_cstate
+    new_state = matched_state .+ dt .* sigmoid_fast.(ps.weight_ch) .* new_cstate
     return (new_state, (new_state, new_cstate)), st
 end
 
