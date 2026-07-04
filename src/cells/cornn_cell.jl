@@ -6,7 +6,7 @@
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing,
         init_cell_weight=nothing, init_state=zeros32, init_memory=zeros32,
-        gamma=0.0, epsilon=0.0, dt=1.0)
+        gamma=1.0, epsilon=1.0, dt=0.1)
 
 [Coupled oscillatory recurrent neural unit](https://arxiv.org/abs/2010.00951).
 
@@ -68,9 +68,9 @@
     Default is `nothing`.
   - `init_state`: Initializer for hidden state. Default set to `zeros32`.
   - `init_memory`: Initializer for memory. Default set to `zeros32`.
-  - `dt`: time step. Default is 1.0.
-  - `gamma`: Damping for state. Default is 0.0.
-  - `epsilon`: Damping for candidate state. Default is 0.0.
+  - `dt`: time step. Default is 0.1.
+  - `gamma`: Damping for state. Default is 1.0.
+  - `epsilon`: Damping for candidate state. Default is 1.0.
 
 ## Inputs
 
@@ -147,7 +147,7 @@ function coRNNCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
         train_state::BoolType=False(), train_memory::BoolType=False(),
         init_bias=nothing, init_recurrent_bias=nothing, init_cell_bias=nothing,
         init_weight=nothing, init_recurrent_weight=nothing, init_cell_weight=nothing,
-        init_state=zeros32, init_memory=zeros32, dt::Number=1.0f0, gamma::Number=0.0f0, epsilon::Number=0.0f0)
+        init_state=zeros32, init_memory=zeros32, dt::Number=0.1f0, gamma::Number=1.0f0, epsilon::Number=1.0f0)
     return coRNNCell(static(train_state), static(train_memory), in_dims, out_dims,
         init_bias, init_recurrent_bias, init_cell_bias, init_weight,
         init_recurrent_weight, init_cell_weight, init_state, init_memory,
