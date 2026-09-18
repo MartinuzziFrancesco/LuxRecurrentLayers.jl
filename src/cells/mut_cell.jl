@@ -140,11 +140,6 @@ initialparameters(rng::AbstractRNG, mut::MUT1Cell) = multi_initialparameters(rng
 
 initialstates(rng::AbstractRNG, ::MUT1Cell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(mut::MUT1Cell)
-    return mut.in_dims * mut.out_dims * 3 + mut.out_dims * mut.out_dims * 2 +
-           mut.out_dims * 5
-end
-
 function (mut::MUT1Cell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -317,11 +312,6 @@ initialparameters(rng::AbstractRNG, mut::MUT2Cell) = multi_initialparameters(rng
 
 initialstates(rng::AbstractRNG, ::MUT2Cell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(mut::MUT2Cell)
-    return mut.in_dims * mut.out_dims * 3 + mut.out_dims * mut.out_dims * 3 +
-           mut.out_dims * 6
-end
-
 function (mut::MUT2Cell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -361,10 +351,11 @@ end
 ```math
 \begin{aligned}
     \mathbf{z}(t) &= \sigma\left( \mathbf{W}_{ih}^{z} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^{z} + \mathbf{W}_{hh}^{z} \mathbf{h}(t) +
+        \mathbf{b}_{ih}^{z} + \mathbf{W}_{hh}^{z} \tanh(\mathbf{h}(t)) +
         \mathbf{b}_{hh}^{z} \right), \\
-    \mathbf{r}(t) &= \sigma\left( \mathbf{x}(t) + \mathbf{W}_{hh}^{r}
-        \mathbf{h}(t) + \mathbf{b}_{hh}^{r} \right), \\
+    \mathbf{r}(t) &= \sigma\left( \mathbf{W}_{ih}^{r} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{r} + \mathbf{W}_{hh}^{r} \mathbf{h}(t) +
+        \mathbf{b}_{hh}^{r} \right), \\
     \mathbf{h}(t+1) &= \left[ \tanh\left( \mathbf{W}_{hh}^{h} \left(
         \mathbf{r}(t) \circ \mathbf{h}(t) + \mathbf{b}_{hh}^{h} \right) +
         \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} \right) \right]
@@ -489,11 +480,6 @@ end
 initialparameters(rng::AbstractRNG, mut::MUT3Cell) = multi_initialparameters(rng, mut)
 
 initialstates(rng::AbstractRNG, ::MUT3Cell) = (rng=Utils.sample_replicate(rng),)
-
-function parameterlength(mut::MUT3Cell)
-    return mut.in_dims * mut.out_dims * 3 + mut.out_dims * mut.out_dims * 2 +
-           mut.out_dims * 5
-end
 
 function (mut::MUT3Cell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},

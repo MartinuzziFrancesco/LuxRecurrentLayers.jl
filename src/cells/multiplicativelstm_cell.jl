@@ -212,11 +212,6 @@ function initialparameters(rng::AbstractRNG, lstm::MultiplicativeLSTMCell)
     return ps
 end
 
-function parameterlength(lstm::MultiplicativeLSTMCell)
-    return lstm.in_dims * lstm.out_dims * 5 + lstm.out_dims * lstm.out_dims * 5 +
-           lstm.out_dims * 10
-end
-
 function (lstm::MultiplicativeLSTMCell)(
         (inp,
             (state, c_state))::Tuple{

@@ -183,11 +183,6 @@ function initialparameters(rng::AbstractRNG, nas::NASCell)
     return multi_initialparameters(rng, nas)
 end
 
-function parameterlength(nas::NASCell)
-    return nas.in_dims * nas.out_dims * 8 + nas.out_dims * nas.out_dims * 8 +
-           nas.out_dims * 16
-end
-
 function (nas::NASCell)(
         (inp,
             (state, c_state))::Tuple{

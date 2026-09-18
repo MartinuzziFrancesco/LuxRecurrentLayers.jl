@@ -153,11 +153,6 @@ end
 
 initialstates(rng::AbstractRNG, ::STARCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(star::STARCell)
-    return star.in_dims * star.out_dims * 2 + star.out_dims * star.out_dims +
-           star.out_dims * 2
-end
-
 statelength(::STARCell) = 1
 
 function (star::STARCell)(
@@ -175,7 +170,7 @@ function (star::STARCell)(
 
     input_gate = tanh_fast.(xs[1])
     forget_gate = @. sigmoid_fast(xs[2] + hs)
-    new_state = @. tanh_fast((1 - forget_gate) * state + forget_gate * input_gate)
+    new_state = @. tanh_fast((1 - forget_gate) * matched_state + forget_gate * input_gate)
     return (new_state, (new_state,)), st
 end
 

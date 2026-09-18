@@ -126,11 +126,6 @@ end
 
 initialstates(rng::AbstractRNG, ::IndRNNCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(indrnn::IndRNNCell)
-    return indrnn.in_dims * indrnn.out_dims + indrnn.out_dims +
-           indrnn.out_dims * 2
-end
-
 function (indrnn::IndRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)

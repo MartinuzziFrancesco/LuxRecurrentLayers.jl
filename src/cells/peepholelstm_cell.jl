@@ -229,11 +229,6 @@ function initialparameters(rng::AbstractRNG, lstm::PeepholeLSTMCell)
     return ps
 end
 
-function parameterlength(lstm::PeepholeLSTMCell)
-    return lstm.in_dims * lstm.out_dims * 4 + lstm.out_dims * lstm.out_dims * 12 +
-           lstm.out_dims * 8
-end
-
 function (lstm::PeepholeLSTMCell)(
         (inp,
             (state, c_state))::Tuple{
@@ -250,14 +245,17 @@ function (lstm::PeepholeLSTMCell)(
     #gates
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
     full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
-    full_gps = fused_dense_bias_activation(identity, ps.weight_ph, matched_cstate, bias_ph)
     gates = full_gxs .+ full_ghs
     input, forget, cell, output = multigate(gates, Val(4))
-    gpeep = multigate(full_gps, Val(3))
+    peep_weights = multigate(ps.weight_ph, Val(3))
+    peep_biases = bias_safe_multigate(bias_ph, Val(3))
+    peep_forget = bias_activation(identity, peep_weights[1] * matched_cstate, peep_biases[1])
+    peep_input = bias_activation(identity, peep_weights[2] * matched_cstate, peep_biases[2])
     #computation
-    new_cstate = @. sigmoid_fast(forget + gpeep[1]) * matched_cstate +
-                    sigmoid_fast(input + gpeep[2]) * tanh_fast(cell)
-    new_state = @. sigmoid_fast(output + gpeep[3]) * tanh_fast(new_cstate)
+    new_cstate = @. sigmoid_fast(forget + peep_forget) * matched_cstate +
+                    sigmoid_fast(input + peep_input) * tanh_fast(cell)
+    peep_output = bias_activation(identity, peep_weights[3] * new_cstate, peep_biases[3])
+    new_state = @. sigmoid_fast(output + peep_output) * tanh_fast(new_cstate)
     return (new_state, (new_state, new_cstate)), st
 end
 

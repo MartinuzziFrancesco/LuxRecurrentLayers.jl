@@ -119,15 +119,10 @@ end
 
 function initialparameters(rng::AbstractRNG, fastrnn::FastRNNCell)
     ps = single_initialparameters(rng, fastrnn)
-    alpha = fastrnn.init_alpha .* ones(1)
-    beta = fastrnn.init_beta .* ones(1)
+    alpha = fill(fastrnn.init_alpha, 1)
+    beta = fill(fastrnn.init_beta, 1)
     ps = merge(ps, (; alpha, beta))
     return ps
-end
-
-function parameterlength(fastrnn::FastRNNCell)
-    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims +
-           fastrnn.out_dims * 2 + 2
 end
 
 function (fastrnn::FastRNNCell)(
@@ -141,7 +136,7 @@ function (fastrnn::FastRNNCell)(
     candidate_state = @. fastrnn.activation(xs + hs)
     alpha = sigmoid_fast(ps.alpha)
     beta = sigmoid_fast(ps.beta)
-    new_state = @. alpha * candidate_state + beta * state
+    new_state = @. alpha * candidate_state + beta * matched_state
     return (new_state, (new_state,)), st
 end
 
@@ -158,7 +153,7 @@ end
         use_bias=true, use_recurrent_bias=true, train_state=false, init_bias=nothing,
         init_recurrent_bias=nothing, init_weight=nothing,
         init_recurrent_weight=nothing, init_state=zeros32,
-        init_zeta=1.0, init_nu=4.0)
+        init_zeta=1.0, init_nu=-4.0)
 
 [Fast gated recurrent neural network cell](https://arxiv.org/abs/1901.02358).
 
@@ -306,15 +301,10 @@ function initialparameters(rng::AbstractRNG, fastrnn::FastGRNNCell)
     end
     has_train_state(fastrnn) &&
         (ps = merge(ps, (hidden_state=fastrnn.init_state(rng, fastrnn.out_dims),)))
-    zeta = fastrnn.init_zeta .* ones(1)
-    nu = fastrnn.init_nu .* ones(1)
+    zeta = fill(fastrnn.init_zeta, 1)
+    nu = fill(fastrnn.init_nu, 1)
     ps = merge(ps, (; zeta, nu))
     return ps
-end
-
-function parameterlength(fastrnn::FastGRNNCell)
-    return fastrnn.in_dims * fastrnn.out_dims + fastrnn.out_dims * fastrnn.out_dims +
-           fastrnn.out_dims * 2 + 2
 end
 
 function (fastrnn::FastGRNNCell)(
@@ -335,7 +325,7 @@ function (fastrnn::FastGRNNCell)(
     zeta = sigmoid_fast(ps.zeta)
     nu = sigmoid_fast(ps.nu)
     new_state = @. (zeta * (ones_arr - gate) + nu) * candidate_state +
-                   gate * state
+                   gate * matched_state
     return (new_state, (new_state,)), st
 end
 

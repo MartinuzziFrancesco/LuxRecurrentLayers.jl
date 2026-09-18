@@ -175,11 +175,6 @@ end
 
 initialstates(rng::AbstractRNG, ::MinimalRNNCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(minimal::MinimalRNNCell)
-    return minimal.in_dims * minimal.out_dims + minimal.out_dims * minimal.out_dims * 2 +
-           minimal.out_dims * 3
-end
-
 statelength(::MinimalRNNCell) = 1
 
 function (minimal::MinimalRNNCell)(
@@ -202,7 +197,7 @@ function (minimal::MinimalRNNCell)(
 
     new_cstate = tanh_fast.(xs)
     update_gate = @. sigmoid_fast(hs + ms)
-    new_state = update_gate .* state .+
+    new_state = update_gate .* matched_state .+
                 (one(eltype(ps.weight_ih)) .- update_gate) .* new_cstate
     return (new_state, (new_state, new_cstate)), st
 end

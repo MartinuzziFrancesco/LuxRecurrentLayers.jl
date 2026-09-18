@@ -151,11 +151,6 @@ initialparameters(rng::AbstractRNG, cfn::CFNCell) = multi_initialparameters(rng,
 
 initialstates(rng::AbstractRNG, ::CFNCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(cfn::CFNCell)
-    return cfn.in_dims * cfn.out_dims * 3 + cfn.out_dims * cfn.out_dims * 2 +
-           cfn.out_dims * 5
-end
-
 statelength(::CFNCell) = 1
 
 function (cfn::CFNCell{False})(inp::AbstractMatrix, ps, st::NamedTuple)
@@ -181,7 +176,8 @@ function (cfn::CFNCell)(
     ghs = multigate(full_ghs, Val(2))
     horizontal_gate = @. sigmoid_fast(gxs[1] + ghs[1])
     vertical_gate = @. sigmoid_fast(gxs[2] + ghs[2])
-    new_state = @. horizontal_gate * tanh_fast(state) + vertical_gate * tanh_fast(gxs[3])
+    new_state = @. horizontal_gate * tanh_fast(matched_state) +
+                   vertical_gate * tanh_fast(gxs[3])
     return (new_state, (new_state,)), st
 end
 

@@ -141,11 +141,6 @@ initialparameters(rng::AbstractRNG, ligru::LiGRUCell) = multi_initialparameters(
 
 initialstates(rng::AbstractRNG, ::LiGRUCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(ligru::LiGRUCell)
-    return ligru.in_dims * ligru.out_dims * 2 + ligru.out_dims * ligru.out_dims * 2 +
-           ligru.out_dims * 4
-end
-
 function (ligru::LiGRUCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -160,7 +155,7 @@ function (ligru::LiGRUCell)(
     gs = multigate(full_gxs .+ full_ghs, Val(2))
     forget_gate = @. sigmoid_fast(gs[1])
     candidate_hidden = @. relu(gs[2])
-    new_state = @. forget_gate * state + (1 - forget_gate) * candidate_hidden
+    new_state = @. forget_gate * matched_state + (1 - forget_gate) * candidate_hidden
     return (new_state, (new_state,)), st
 end
 

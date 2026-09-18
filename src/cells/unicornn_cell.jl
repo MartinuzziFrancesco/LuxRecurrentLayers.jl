@@ -162,10 +162,6 @@ function initialparameters(rng::AbstractRNG, unicornn::UnICORNNCell)
     return ps
 end
 
-function parameterlength(unicornn::UnICORNNCell)
-    return unicornn.in_dims * unicornn.out_dims + unicornn.out_dims * 3
-end
-
 function (unicornn::UnICORNNCell)(
         (inp,
             (state, c_state))::Tuple{
@@ -184,7 +180,7 @@ function (unicornn::UnICORNNCell)(
                  dt .* sigmoid_fast.(ps.weight_ch) .*
                  (tanh_fast.(wh .+ wi) .+
                   alpha .* matched_state)
-    new_state = state .+ dt .* sigmoid_fast.(ps.weight_ch) .* new_cstate
+    new_state = matched_state .+ dt .* sigmoid_fast.(ps.weight_ch) .* new_cstate
     return (new_state, (new_state, new_cstate)), st
 end
 
