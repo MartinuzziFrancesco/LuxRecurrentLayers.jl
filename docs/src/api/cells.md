@@ -33,5 +33,6 @@ from this list:
 - [TGRUCell](cells/tgrucell.md)
 - [TLSTMCell](cells/tlstmcell.md)
 - [TRNNCell](cells/trnncell.md)
+- [UGRNNCell](cells/ugrnncell.md)
 - [UnICORNNCell](cells/unicornncell.md)
 - [WMCLSTMCell](cells/wmclstmcell.md)
