@@ -174,7 +174,7 @@ function (janet::JANETCell)(
     linear_gate = gxs[1] .+ ghs[1]
     candidate_state = @. tanh_fast(gxs[2] + ghs[2])
     ones_vec = one(eltype(candidate_state))
-    new_cstate = @. sigmoid_fast(linear_gate) * c_state +
+    new_cstate = @. sigmoid_fast(linear_gate) * matched_cstate +
                     (ones_vec - sigmoid_fast(linear_gate - janet.beta)) *
                     candidate_state
     new_state = new_cstate

@@ -151,11 +151,6 @@ end
 
 initialstates(rng::AbstractRNG, ::LightRUCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(lightru::LightRUCell)
-    return lightru.in_dims * lightru.out_dims * 2 + lightru.out_dims * lightru.out_dims +
-           lightru.out_dims * 3
-end
-
 function (lightru::LightRUCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -167,7 +162,7 @@ function (lightru::LightRUCell)(
     gh = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     candidate_state = @. tanh_fast(gxs[1])
     forget_gate = sigmoid_fast.(gxs[2] .+ gh)
-    new_state = @. (1 - forget_gate) * state + forget_gate * candidate_state
+    new_state = @. (1 - forget_gate) * matched_state + forget_gate * candidate_state
     return (new_state, (new_state,)), st
 end
 

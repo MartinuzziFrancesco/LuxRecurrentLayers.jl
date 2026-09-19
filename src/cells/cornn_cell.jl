@@ -19,7 +19,7 @@
         \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh} +
         \mathbf{W}_{ch} \mathbf{c}(t-1) + \mathbf{b}_{ch} \right)
         - \Delta t \, \gamma \, \mathbf{h}(t-1) - \Delta t \, \epsilon \,
-        \mathbf{c}(t), \\
+        \mathbf{c}(t-1), \\
     \mathbf{h}(t) &= \mathbf{h}(t-1) + \Delta t \, \mathbf{c}(t)
 \end{aligned}
 ```
@@ -182,11 +182,6 @@ function initialparameters(rng::AbstractRNG, cornn::coRNNCell)
     return ps
 end
 
-function parameterlength(cornn::coRNNCell)
-    return cornn.in_dims * cornn.out_dims + cornn.out_dims * cornn.out_dims * 2 +
-           cornn.out_dims * 3
-end
-
 function (cornn::coRNNCell)(
         (inp,
             (state, c_state))::Tuple{
@@ -203,8 +198,9 @@ function (cornn::coRNNCell)(
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     zs = fused_dense_bias_activation(identity, ps.weight_ch, matched_cstate, bias_ch)
     pre_act = @. xs + hs + zs
-    new_cstate = @. c_state + dt * (tanh_fast(pre_act) - gamma * state - epsilon * c_state)
-    new_state = @. state + dt * new_cstate
+    new_cstate = @. matched_cstate +
+                    dt * (tanh_fast(pre_act) - gamma * matched_state - epsilon * matched_cstate)
+    new_state = @. matched_state + dt * new_cstate
     return (new_state, (new_state, new_cstate)), st
 end
 

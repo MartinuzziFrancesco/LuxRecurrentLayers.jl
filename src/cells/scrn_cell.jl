@@ -209,11 +209,6 @@ function initialparameters(rng::AbstractRNG, scrn::SCRNCell)
     return ps
 end
 
-function parameterlength(scrn::SCRNCell)
-    return scrn.in_dims * scrn.out_dims * 2 + scrn.out_dims * scrn.out_dims * 4 +
-           scrn.out_dims * 2 + 1
-end
-
 function (scrn::SCRNCell)(
         (inp,
             (state, c_state))::Tuple{
@@ -226,14 +221,14 @@ function (scrn::SCRNCell)(
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     bias_ch = safe_getproperty(ps, Val(:bias_ch))
     full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
-    full_gcs = fused_dense_bias_activation(identity, ps.weight_ch, matched_state, bias_ch)
     gxs = multigate(full_gxs, Val(2))
     ghs = multigate(ps.weight_hh, Val(2))
     bhs = bias_safe_multigate(bias_hh, Val(2))
-    gcs = multigate(full_gcs, Val(2))
     t_ones = one(eltype(ps.weight_hh))
     new_cstate = (t_ones .- ps.alpha) .* gxs[1] .+
                  ps.alpha .* matched_cstate
+    full_gcs = fused_dense_bias_activation(identity, ps.weight_ch, new_cstate, bias_ch)
+    gcs = multigate(full_gcs, Val(2))
     hidden_layer = bias_activation(
         sigmoid_fast, gxs[2] .+ ghs[1] * matched_state .+ gcs[1], bhs[1])
     new_state = bias_activation(tanh_fast, ghs[2] * hidden_layer .+ gcs[2], bhs[2])

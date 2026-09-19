@@ -12,7 +12,7 @@
 ```math
 \begin{aligned}
     \mathbf{p}(t) &= \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih}, \\
-    \mathbf{q}(t) &= \mathbf{W}_{ih} \mathbf{h}(t-1) + \mathbf{b}_{hh}, \\
+    \mathbf{q}(t) &= \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh}, \\
     \mathbf{i}(t) &= \sigma(\mathbf{p}(t) + \mathbf{q}(t)), \\
     \mathbf{f}(t) &= \sigma(\mathbf{p}(t) - \mathbf{q}(t)), \\
     \mathbf{h}(t) &= \mathbf{i}(t) \circ \mathbf{p}(t) + \mathbf{f}(t)
@@ -117,11 +117,6 @@ function initialparameters(rng::AbstractRNG, atr::ATRCell)
 end
 
 initialstates(rng::AbstractRNG, ::ATRCell) = (rng=Utils.sample_replicate(rng),)
-
-function parameterlength(atr::ATRCell)
-    return atr.in_dims * atr.out_dims + atr.out_dims * atr.out_dims +
-           atr.out_dims * 2
-end
 
 statelength(::ATRCell) = 1
 

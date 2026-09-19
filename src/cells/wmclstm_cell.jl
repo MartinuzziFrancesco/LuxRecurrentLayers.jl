@@ -16,19 +16,19 @@ connections](https://arxiv.org/abs/2109.00020).
 \begin{aligned}
     \mathbf{i}(t) &= \sigma\left( \mathbf{W}_{ih}^{i} \mathbf{x}(t) +
         \mathbf{b}_{ih}^{i} + \mathbf{W}_{hh}^{i} \mathbf{h}(t-1) +
-        \mathbf{b}_{hh}^{i} + \mathbf{W}_{mh}^{i} \mathbf{c}(t-1) +
-        \mathbf{b}_{mh}^{i} \right), \\
+        \mathbf{b}_{hh}^{i} + \tanh\left(\mathbf{W}_{mh}^{i} \mathbf{c}(t-1) +
+        \mathbf{b}_{mh}^{i}\right) \right), \\
     \mathbf{f}(t) &= \sigma\left( \mathbf{W}_{ih}^{f} \mathbf{x}(t) +
         \mathbf{b}_{ih}^{f} + \mathbf{W}_{hh}^{f} \mathbf{h}(t-1) +
-        \mathbf{b}_{hh}^{f} + \mathbf{W}_{mh}^{f} \mathbf{c}(t-1) +
-        \mathbf{b}_{mh}^{f} \right), \\
+        \mathbf{b}_{hh}^{f} + \tanh\left(\mathbf{W}_{mh}^{f} \mathbf{c}(t-1) +
+        \mathbf{b}_{mh}^{f}\right) \right), \\
     \mathbf{c}(t) &= \mathbf{f}(t) \circ \mathbf{c}(t-1) + \mathbf{i}(t) \circ
-        \sigma_c\left( \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c}
-        \right), \\
+        \sigma_c\left( \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c} +
+        \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{c} \right), \\
     \mathbf{o}(t) &= \sigma\left( \mathbf{W}_{ih}^{o} \mathbf{x}(t) +
         \mathbf{b}_{ih}^{o} + \mathbf{W}_{hh}^{o} \mathbf{h}(t-1) +
-        \mathbf{b}_{hh}^{o} + \mathbf{W}_{mh}^{o} \mathbf{c}(t) +
-        \mathbf{b}_{mh}^{o} \right), \\
+        \mathbf{b}_{hh}^{o} + \tanh\left(\mathbf{W}_{mh}^{o} \mathbf{c}(t) +
+        \mathbf{b}_{mh}^{o}\right) \right), \\
     \mathbf{h}(t) &= \mathbf{o}(t) \circ \sigma_h\left( \mathbf{c}(t) \right)
 \end{aligned}
 
@@ -233,11 +233,6 @@ function initialparameters(rng::AbstractRNG, lstm::WMCLSTMCell)
     known(lstm.train_memory) &&
         (ps = merge(ps, (memory=lstm.init_memory(rng, lstm.out_dims),)))
     return ps
-end
-
-function parameterlength(lstm::WMCLSTMCell)
-    return lstm.in_dims * lstm.out_dims * 4 + lstm.out_dims * lstm.out_dims * 7 +
-           lstm.out_dims * 11
 end
 
 function (lstm::WMCLSTMCell)(

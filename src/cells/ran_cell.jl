@@ -163,11 +163,6 @@ function initialparameters(rng::AbstractRNG, ran::RANCell)
     return multi_initialparameters(rng, ran)
 end
 
-function parameterlength(ran::RANCell)
-    return ran.in_dims * ran.out_dims * 3 + ran.out_dims * ran.out_dims * 2 +
-           ran.out_dims * 5
-end
-
 function (ran::RANCell)(
         (inp,
             (state, c_state))::Tuple{

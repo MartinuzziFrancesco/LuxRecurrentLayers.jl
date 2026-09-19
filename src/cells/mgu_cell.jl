@@ -139,11 +139,6 @@ end
 
 initialparameters(rng::AbstractRNG, mgu::MGUCell) = multi_initialparameters(rng, mgu)
 
-function parameterlength(mgu::MGUCell)
-    return mgu.in_dims * mgu.out_dims * 2 + mgu.out_dims * mgu.out_dims * 2 +
-           mgu.out_dims * 4
-end
-
 function (mgu::MGUCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
