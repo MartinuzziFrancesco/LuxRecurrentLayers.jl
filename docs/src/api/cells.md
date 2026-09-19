@@ -25,6 +25,7 @@ from this list:
 - [MUT3Cell](cells/mut3cell.md)
 - [NASCell](cells/nascell.md)
 - [NBRCell](cells/nbrcell.md)
+- [OriginalLSTMCell](cells/originallstmcell.md)
 - [PeepholeLSTMCell](cells/peepholelstmcell.md)
 - [RANCell](cells/rancell.md)
 - [SCRNCell](cells/scrncell.md)
