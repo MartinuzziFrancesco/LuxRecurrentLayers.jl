@@ -16,7 +16,7 @@
         \mathbf{W}_{hh} \mathbf{h}(t-1) + \mathbf{b}_{hh} \right), \\
     \mathbf{i}(t) &= 1 - \mathbf{f}(t), \\
     \mathbf{h}(t) &= \tanh\left(
-        \mathbf{i}(t) \circ \left( \mathbf{W}_{ih} \mathbf{x}(t) + \mathbf{b}_{ih} \right) +
+        \mathbf{i}(t) \circ \mathbf{W}_{ih} \mathbf{x}(t) +
         \mathbf{f}(t) \circ \mathbf{h}(t-1) \right)
 \end{aligned}
 ```
@@ -124,11 +124,6 @@ end
 
 initialparameters(rng::AbstractRNG, sgrn::SGRNCell) = single_initialparameters(rng, sgrn)
 
-function parameterlength(sgrn::SGRNCell)
-    return sgrn.in_dims * sgrn.out_dims + sgrn.out_dims * sgrn.out_dims +
-           sgrn.out_dims * 2
-end
-
 function (sgrn::SGRNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -136,11 +131,12 @@ function (sgrn::SGRNCell)(
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
     t_ones = one(eltype(matched_inp))
-    xs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
+    xs_raw = ps.weight_ih * matched_inp
+    xs = bias_activation(identity, xs_raw, bias_ih)
     hs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
     forget_gate = @. sigmoid_fast(xs + hs)
     input_gate = @. t_ones - forget_gate
-    new_state = @. tanh_fast(input_gate * xs + forget_gate * matched_state)
+    new_state = @. tanh_fast(input_gate * xs_raw + forget_gate * matched_state)
     return (new_state, (new_state,)), st
 end
 

@@ -20,11 +20,11 @@
         \mathbf{W}_{ih}^{2} \mathbf{x}(t) + \mathbf{b}_{ih}^{2} +
         \mathbf{W}_{hh}^{2} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{2} \right), \\
     \mathbf{c}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{c}(t-1) +
-        \boldsymbol{\Delta t}(t) \circ \sigma\left(
+        \boldsymbol{\Delta t}(t) \circ \tanh\left(
         \mathbf{W}_{ih}^{c} \mathbf{x}(t) + \mathbf{b}_{ih}^{c} +
         \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) + \mathbf{b}_{hh}^{c} \right), \\
     \mathbf{h}(t) &= \left(1 - \boldsymbol{\Delta t}(t)\right) \circ \mathbf{h}(t-1) +
-        \boldsymbol{\Delta t}(t) \circ \sigma\left(
+        \boldsymbol{\Delta t}(t) \circ \tanh\left(
         \mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^{h} +
         \mathbf{W}_{ch} \mathbf{c}(t) + \mathbf{b}_{ch} \right)
 \end{aligned}
@@ -207,11 +207,6 @@ function initialparameters(rng::AbstractRNG, lem::LEMCell)
     known(lem.train_memory) &&
         (ps = merge(ps, (memory=lem.init_memory(rng, lem.out_dims),)))
     return ps
-end
-
-function parameterlength(lem::LEMCell)
-    return lem.in_dims * lem.out_dims * 2 + lem.out_dims * lem.out_dims * 4 +
-           lem.out_dims * 2 + 1
 end
 
 function (lem::LEMCell)(

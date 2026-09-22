@@ -1,0 +1,176 @@
+#https://www.jmlr.org/papers/volume3/gers02a/gers02a.pdf
+@doc raw"""
+    OriginalLSTMCell(in_dims => out_dims;
+        use_bias=true, use_recurrent_bias=true, train_state=false, train_memory=false,
+        init_bias=nothing, init_weight=nothing, init_recurrent_weight=nothing,
+        init_recurrent_bias=nothing, init_state=zeros32, init_memory=zeros32)
+
+[Original long short term memory cell](https://ieeexplore.ieee.org/abstract/document/6795963),
+with no forget gate.
+
+## Equations
+```math
+\begin{aligned}
+    \mathbf{i}(t) &= \sigma\left( \mathbf{W}_{ih}^{i} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{i} + \mathbf{W}_{hh}^{i} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{i} \right), \\
+    \tilde{\mathbf{c}}(t) &= \tanh\left( \mathbf{W}_{ih}^{c} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{c} + \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{c} \right), \\
+    \mathbf{o}(t) &= \sigma\left( \mathbf{W}_{ih}^{o} \mathbf{x}(t) +
+        \mathbf{b}_{ih}^{o} + \mathbf{W}_{hh}^{o} \mathbf{h}(t-1) +
+        \mathbf{b}_{hh}^{o} \right), \\
+    \mathbf{c}(t) &= \mathbf{c}(t-1) + \mathbf{i}(t) \circ \tilde{\mathbf{c}}(t), \\
+    \mathbf{h}(t) &= \mathbf{o}(t) \circ \tanh\left( \mathbf{c}(t) \right)
+\end{aligned}
+```
+
+## Arguments
+
+  - `in_dims`: Input Dimension
+  - `out_dims`: Output (Hidden State & Memory) Dimension
+
+## Keyword Arguments
+
+  - `use_bias`: Flag to use bias $\mathbf{b}_{ih}$ in the computation.
+    Default set to `true`.
+  - `use_recurrent_bias`: Flag to use recurrent bias $\mathbf{b}_{hh}$ in the computation.
+    Default set to `true`.
+  - `train_state`: Flag to set the initial hidden state as trainable. Default set to `false`.
+  - `train_memory`: Flag to set the initial memory state as trainable. Default set to `false`.
+  - `init_bias`: Initializer for input-to-hidden biases
+    $\mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{o}$.
+    Must be a tuple of 3 functions. If a single function is provided, it is expanded
+    to a 3-tuple. If set to `nothing`, each bias is initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_bias`: Initializer for hidden-to-hidden biases
+    $\mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{c}, \mathbf{b}_{hh}^{o}$.
+    Must be a tuple of 3 functions. If a single function is provided, it is expanded
+    to a 3-tuple. If set to `nothing`, each bias is initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_weight`: Initializer for input-to-hidden weights
+    $\mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{o}$.
+    Must be a tuple of 3 functions. If a single function is provided, it is expanded
+    to a 3-tuple. If set to `nothing`, each weight is initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_recurrent_weight`: Initializer for hidden-to-hidden weights
+    $\mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{c}, \mathbf{W}_{hh}^{o}$.
+    Must be a tuple of 3 functions. If a single function is provided, it is expanded
+    to a 3-tuple. If set to `nothing`, each weight is initialized from a uniform
+    distribution within `[-bound, bound]` where `bound = inv(sqrt(out_dims))`.
+    Default is `nothing`.
+  - `init_state`: Initializer for hidden state. Default set to `zeros32`.
+  - `init_memory`: Initializer for memory. Default set to `zeros32`.
+
+## Inputs
+
+  - Case 1a: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `false` - Creates a hidden state using
+             `init_state`, hidden memory using `init_memory` and proceeds to Case 2.
+  - Case 1b: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `false` - Repeats `hidden_state` vector
+             from the parameters to match the shape of `x`, creates hidden memory using
+             `init_memory` and proceeds to Case 2.
+  - Case 1c: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `false`, `train_memory` is set to `true` - Creates a hidden state using
+             `init_state`, repeats the memory vector from parameters to match the shape of
+             `x` and proceeds to Case 2.
+  - Case 1d: Only a single input `x` of shape `(in_dims, batch_size)`, `train_state` is set
+             to `true`, `train_memory` is set to `true` - Repeats the hidden state and
+             memory vectors from the parameters to match the shape of  `x` and proceeds to
+             Case 2.
+  - Case 2: Tuple `(x, (h, c))` is provided, then the output and a tuple containing the
+            updated hidden state and memory is returned.
+
+## Returns
+
+  - Tuple Containing
+
+      + Output ``h_{new}`` of shape `(out_dims, batch_size)`
+      + Tuple containing new hidden state ``h_{new}`` and new memory ``c_{new}``
+
+  - Updated model state
+
+## Parameters
+
+  - `weight_ih`: Concatenated weights mapping from input to hidden units
+    ``\{ \mathbf{W}_{ih}^{i}, \mathbf{W}_{ih}^{c}, \mathbf{W}_{ih}^{o} \}``
+  - `weight_hh`: Concatenated weights mapping from hidden state to hidden units
+    ``\{ \mathbf{W}_{hh}^{i}, \mathbf{W}_{hh}^{c}, \mathbf{W}_{hh}^{o} \}``
+  - `bias_ih`: Concatenated input-to-hidden bias vectors (if `use_bias=true`)
+    ``\{ \mathbf{b}_{ih}^{i}, \mathbf{b}_{ih}^{c}, \mathbf{b}_{ih}^{o} \}``
+  - `bias_hh`: Concatenated hidden-to-hidden bias vectors (if `use_recurrent_bias=true`)
+    ``\{ \mathbf{b}_{hh}^{i}, \mathbf{b}_{hh}^{c}, \mathbf{b}_{hh}^{o} \}``
+  - `hidden_state`: Initial hidden state vector (not present if `train_state=false`)
+  - `memory`: Initial memory vector (not present if `train_memory=false`)
+
+## States
+
+  - `rng`: Controls the randomness (if any) in the initial state generation
+
+"""
+@concrete struct OriginalLSTMCell{TS <: StaticBool, TM <: StaticBool} <:
+                 AbstractDoubleRecurrentCell{TS, TM}
+    train_state::TS
+    train_memory::TM
+    in_dims <: IntegerType
+    out_dims <: IntegerType
+    init_bias
+    init_recurrent_bias
+    init_weight
+    init_recurrent_weight
+    init_state
+    init_memory
+    use_bias <: StaticBool
+    use_recurrent_bias <: StaticBool
+end
+
+function OriginalLSTMCell((in_dims, out_dims)::Pair{<:IntegerType, <:IntegerType};
+        use_bias::BoolType=True(), use_recurrent_bias::BoolType=True(),
+        train_state::BoolType=False(), train_memory::BoolType=False(),
+        init_bias=nothing, init_recurrent_bias=nothing, init_weight=nothing,
+        init_recurrent_weight=nothing, init_state=zeros32, init_memory=zeros32)
+    init_weight isa NTuple{3} || (init_weight = ntuple(Returns(init_weight), 3))
+    init_recurrent_weight isa NTuple{3} ||
+        (init_recurrent_weight = ntuple(Returns(init_recurrent_weight), 3))
+    init_bias isa NTuple{3} || (init_bias = ntuple(Returns(init_bias), 3))
+    init_recurrent_bias isa NTuple{3} ||
+        (init_recurrent_bias = ntuple(Returns(init_recurrent_bias), 3))
+    return OriginalLSTMCell(static(train_state), static(train_memory), in_dims, out_dims,
+        init_bias, init_recurrent_bias, init_weight, init_recurrent_weight, init_state,
+        init_memory, static(use_bias), static(use_recurrent_bias))
+end
+
+function initialparameters(rng::AbstractRNG, lstm::OriginalLSTMCell)
+    return multi_initialparameters(rng, lstm)
+end
+
+function (lstm::OriginalLSTMCell)(
+        (inp,
+            (state, c_state))::Tuple{
+            <:AbstractMatrix, Tuple{<:AbstractMatrix, <:AbstractMatrix}},
+        ps, st::NamedTuple)
+    matched_inp, matched_state,
+    matched_cstate = match_eltype(
+        lstm, ps, st, inp, state, c_state)
+    bias_ih = safe_getproperty(ps, Val(:bias_ih))
+    bias_hh = safe_getproperty(ps, Val(:bias_hh))
+    full_gxs = fused_dense_bias_activation(identity, ps.weight_ih, matched_inp, bias_ih)
+    full_ghs = fused_dense_bias_activation(identity, ps.weight_hh, matched_state, bias_hh)
+    gates = full_gxs .+ full_ghs
+    input_gate, cell_gate, output_gate = multigate(gates, Val(3))
+    new_cstate = @. matched_cstate + sigmoid_fast(input_gate) * tanh_fast(cell_gate)
+    new_state = @. sigmoid_fast(output_gate) * tanh_fast(new_cstate)
+    return (new_state, (new_state, new_cstate)), st
+end
+
+function Base.show(io::IO, lstm::OriginalLSTMCell)
+    print(io, "OriginalLSTMCell($(lstm.in_dims) => $(lstm.out_dims)")
+    has_bias(lstm) || print(io, ", use_bias=false")
+    has_train_state(lstm) && print(io, ", train_state=true")
+    known(lstm.train_memory) && print(io, ", train_memory=true")
+    return print(io, ")")
+end

@@ -1,4 +1,4 @@
-#https://arxiv.org/abs/1911.11033
+#https://arxiv.org/abs/1602.02218
 @doc raw"""
     TRNNCell(in_dims => out_dims;
         use_bias=true, train_state=false, init_bias=nothing,
@@ -120,10 +120,6 @@ end
 
 initialstates(rng::AbstractRNG, ::TRNNCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(trnn::TRNNCell)
-    return trnn.in_dims * trnn.out_dims * 2 + trnn.out_dims * 2
-end
-
 statelength(::TRNNCell) = 1
 
 function (trnn::TRNNCell)(
@@ -150,7 +146,7 @@ function Base.show(io::IO, trnn::TRNNCell)
     print(io, ")")
 end
 
-#https://arxiv.org/abs/2109.00020
+#https://arxiv.org/abs/1602.02218
 @doc raw"""
     TGRUCell(in_dims => out_dims;
         use_bias=true, use_recurrent_bias=true,
@@ -317,11 +313,6 @@ function initialparameters(rng::AbstractRNG, tgru::TGRUCell)
     return multi_initialparameters(rng, tgru)
 end
 
-function parameterlength(tgru::TGRUCell)
-    return tgru.in_dims * tgru.out_dims * 3 + tgru.out_dims * tgru.out_dims * 3 +
-           tgru.out_dims * 6
-end
-
 function (tgru::TGRUCell)(
         (inp,
             (state, c_state))::Tuple{
@@ -355,7 +346,7 @@ function Base.show(io::IO, tgru::TGRUCell)
     print(io, ")")
 end
 
-#https://arxiv.org/abs/2109.00020
+#https://arxiv.org/abs/1602.02218
 @doc raw"""
     TLSTMCell(in_dims => out_dims;
         use_bias=true, use_recurrent_bias=true,
@@ -545,21 +536,13 @@ function initialparameters(rng::AbstractRNG, lstm::TLSTMCell)
     return ps
 end
 
-function parameterlength(lstm::TLSTMCell)
-    return lstm.in_dims * lstm.out_dims * 3 + lstm.out_dims * lstm.out_dims * 3 +
-           lstm.out_dims * 6
-end
-
 function (lstm::TLSTMCell)(
         (inp,
             (state, c_state, prev_inp)),
         ps, st::NamedTuple)
     #type match
-    matched_inp, matched_state = match_eltype(
-        lstm, ps, st, inp, state, c_state)
-    matched_previnp,
-    mateched_cstate, = match_eltype(
-        lstm, ps, st, prev_inp, c_state, c_state)
+    matched_inp, matched_state, matched_cstate, matched_previnp = match_eltype(
+        lstm, ps, st, inp, state, c_state, prev_inp)
     #get bias
     bias_ih = safe_getproperty(ps, Val(:bias_ih))
     bias_hh = safe_getproperty(ps, Val(:bias_hh))
@@ -571,7 +554,7 @@ function (lstm::TLSTMCell)(
     gates = multigate(full_gates, Val(3))
     update_gate = @. sigmoid_fast(gates[2])
     candidate_state = @. tanh_fast(gates[3])
-    new_cstate = @. update_gate * mateched_cstate + (t_ones - update_gate) * gates[1]
+    new_cstate = @. update_gate * matched_cstate + (t_ones - update_gate) * gates[1]
     new_state = @. new_cstate * candidate_state
 
     return (new_state, (new_state, new_cstate, matched_inp)), st

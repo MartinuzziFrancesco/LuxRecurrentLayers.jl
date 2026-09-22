@@ -165,11 +165,6 @@ end
 
 initialstates(rng::AbstractRNG, ::BRCell) = (rng=Utils.sample_replicate(rng),)
 
-function parameterlength(br::BRCell)
-    return br.in_dims * br.out_dims * 3 + br.out_dims * 2 +
-           br.out_dims * 3 * 2
-end
-
 function (br::BRCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -210,10 +205,10 @@ end
 ```math
 \begin{aligned}
     \mathbf{a}(t) &= 1 + \tanh\left(\mathbf{W}_{ih}^{a} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^a + \mathbf{W}_{hh}^{a} \circ \mathbf{h}(t-1)+
+        \mathbf{b}_{ih}^a + \mathbf{W}_{hh}^{a} \mathbf{h}(t-1)+
         \mathbf{b}_{hh}^a \right) \\
     \mathbf{c}(t) &= \sigma\left(\mathbf{W}_{ih}^{c} \mathbf{x}(t) +
-        \mathbf{b}_{ih}^c + \mathbf{W}_{hh}^{c} \circ \mathbf{h}(t-1) +
+        \mathbf{b}_{ih}^c + \mathbf{W}_{hh}^{c} \mathbf{h}(t-1) +
         \mathbf{b}_{hh}^c \right)\\
     \mathbf{h}(t) &= \mathbf{c}(t) \circ \mathbf{h}(t-1) + (1 - \mathbf{c}(t))
         \circ \tanh\left(\mathbf{W}_{ih}^{h} \mathbf{x}(t) + \mathbf{b}_{ih}^h +
@@ -346,11 +341,6 @@ function initialparameters(rng::AbstractRNG, nbr::NBRCell)
 end
 
 initialstates(rng::AbstractRNG, ::NBRCell) = (rng=Utils.sample_replicate(rng),)
-
-function parameterlength(nbr::NBRCell)
-    return nbr.in_dims * nbr.out_dims * 3 + nbr.out_dims * nbr.out_dims * 2 +
-           nbr.out_dims * 5
-end
 
 function (nbr::NBRCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},

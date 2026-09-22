@@ -117,11 +117,6 @@ function initialparameters(rng::AbstractRNG, asymrnn::AntisymmetricRNNCell)
     return single_initialparameters(rng, asymrnn)
 end
 
-function parameterlength(asymrnn::AntisymmetricRNNCell)
-    return asymrnn.in_dims * asymrnn.out_dims + asymrnn.out_dims * asymrnn.out_dims +
-           asymrnn.out_dims * 2
-end
-
 function (asymrnn::AntisymmetricRNNCell)(
         (inp, (state,))::Tuple{<:AbstractMatrix, Tuple{<:AbstractMatrix}},
         ps, st::NamedTuple)
@@ -296,11 +291,6 @@ function initialparameters(rng::AbstractRNG, asymrnn::GatedAntisymmetricRNNCell)
     has_train_state(asymrnn) &&
         (ps = merge(ps, (hidden_state=asymrnn.init_state(rng, asymrnn.out_dims),)))
     return ps
-end
-
-function parameterlength(asymrnn::GatedAntisymmetricRNNCell)
-    return asymrnn.in_dims * asymrnn.out_dims * 2 + asymrnn.out_dims * asymrnn.out_dims +
-           asymrnn.out_dims * 2
 end
 
 function (asymrnn::GatedAntisymmetricRNNCell)(
