@@ -28,6 +28,7 @@ from this list:
 - [OriginalLSTMCell](cells/originallstmcell.md)
 - [PeepholeLSTMCell](cells/peepholelstmcell.md)
 - [RANCell](cells/rancell.md)
+- [RHNCell](cells/rhncell.md)
 - [SCRNCell](cells/scrncell.md)
 - [SGRNCell](cells/sgrncell.md)
 - [STARCell](cells/starcell.md)
