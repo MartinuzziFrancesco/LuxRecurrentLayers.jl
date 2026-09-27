@@ -22,9 +22,9 @@ BoolType = Utils.BoolType
 export AntisymmetricRNNCell, ATRCell, BRCell, CFNCell, coRNNCell, FastGRNNCell,
        FastRNNCell, GatedAntisymmetricRNNCell, IndRNNCell, JANETCell, LEMCell, LightRUCell,
        LiGRUCell, MGUCell, MinimalRNNCell, MultiplicativeLSTMCell, MUT1Cell, MUT2Cell,
-       MUT3Cell, NASCell, NBRCell, OriginalLSTMCell, PeepholeLSTMCell, RANCell, SCRNCell,
-       SGRNCell, STARCell, TGRUCell, TLSTMCell, TRNNCell, UGRNNCell, UnICORNNCell,
-       WMCLSTMCell
+       MUT3Cell, NASCell, NBRCell, OriginalLSTMCell, PeepholeLSTMCell, RANCell, RHNCell,
+       SCRNCell, SGRNCell, STARCell, TGRUCell, TLSTMCell, TRNNCell, UGRNNCell,
+       UnICORNNCell, WMCLSTMCell
 
 include("generics.jl")
 
