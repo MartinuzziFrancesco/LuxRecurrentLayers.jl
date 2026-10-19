@@ -5,9 +5,9 @@
 <div align="center">
 
 
-| **Documentation** | **Build Status** | **Julia** | **Testing** |
-|:-----------------:|:----------------:|:---------:|:-----------:|
-| [![docsstbl][docs-stbl]][docsstbl-url] [![docsdev][docs-dev]][docsdev-url] | [![CI][ci-img]][ci-url] | [![Julia][julia-img]][julia-url] [![Code Style: Blue][style-img]][style-url] | [![Aqua QA][aqua-img]][aqua-url] [![JET][jet-img]][jet-url] [![codecov][cc-img]][cc-url] |
+| **Documentation** | **Build Status** | **Julia** | **Testing** | **Contributing** |
+|:-----------------:|:----------------:|:---------:|:-----------:|:----------------:|
+| [![docsstbl][docs-stbl]][docsstbl-url] [![docsdev][docs-dev]][docsdev-url] | [![CI][ci-img]][ci-url] | [![Julia][julia-img]][julia-url] [![Code Style: Blue][style-img]][style-url] | [![Aqua QA][aqua-img]][aqua-url] [![JET][jet-img]][jet-url] [![codecov][cc-img]][cc-url] | [![ColPrac][colprac-img]][colprac-url] |
 
 
 [docs-stbl]: https://img.shields.io/badge/docs-stable-blue.svg
@@ -33,6 +33,9 @@
 
 [jet-img]: https://img.shields.io/badge/%E2%9C%88%EF%B8%8F%20tested%20with%20-%20JET.jl%20-%20red
 [jet-url]: https://github.com/aviatesk/JET.jl
+
+[colprac-img]: https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet
+[colprac-url]: https://github.com/SciML/ColPrac
 
 </div>
 
